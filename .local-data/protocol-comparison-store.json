@@ -1,0 +1,727 @@
+{
+  "testRuns": [
+    {
+      "_id": "1062511b-6c71-41aa-90ff-c36cc4751da6",
+      "userId": null,
+      "configuration": {
+        "testName": "Test 1779788354564",
+        "attributes": [
+          {
+            "name": "latency",
+            "label": "Latency",
+            "description": "Time delay in message transmission",
+            "weight": 12.5
+          },
+          {
+            "name": "reliability",
+            "label": "Reliability",
+            "description": "Message delivery success rate",
+            "weight": 12.5
+          },
+          {
+            "name": "throughput",
+            "label": "Throughput",
+            "description": "Data transfer rate",
+            "weight": 12.5
+          },
+          {
+            "name": "jitter",
+            "label": "Jitter",
+            "description": "Variation in latency",
+            "weight": 12.5
+          },
+          {
+            "name": "ordering",
+            "label": "Ordering",
+            "description": "Message sequence preservation",
+            "weight": 12.5
+          },
+          {
+            "name": "dataIntegrity",
+            "label": "Data Integrity",
+            "description": "Data accuracy and consistency",
+            "weight": 12.5
+          },
+          {
+            "name": "resourceUsage",
+            "label": "Resource Usage",
+            "description": "CPU and memory consumption",
+            "weight": 12.5
+          },
+          {
+            "name": "securityOverhead",
+            "label": "Security Overhead",
+            "description": "Encryption/authentication cost",
+            "weight": 12.5
+          }
+        ],
+        "selectedProtocols": [
+          "MQTT",
+          "HTTP",
+          "WebSocket"
+        ],
+        "scenarios": [
+          {
+            "name": "Stable Network",
+            "description": "Ideal conditions with consistent connectivity",
+            "latency": 10,
+            "packetLoss": 0,
+            "jitter": 2,
+            "unstable": false
+          }
+        ],
+        "messageSize": 1024,
+        "messageFrequency": 100,
+        "protocolConfig": {
+          "mqttBrokerUrl": "mqtt://broker.emqx.io:1883",
+          "httpEndpoint": "https://httpbin.org/post",
+          "websocketUrl": "wss://echo.websocket.org",
+          "coapServerUrl": "coap://coap.me"
+        }
+      },
+      "status": "running",
+      "startTime": "2026-05-26T09:39:14.748Z",
+      "protocols": [
+        "MQTT",
+        "HTTP",
+        "WebSocket"
+      ],
+      "attributes": [
+        {
+          "name": "latency",
+          "label": "Latency",
+          "description": "Time delay in message transmission",
+          "weight": 12.5
+        },
+        {
+          "name": "reliability",
+          "label": "Reliability",
+          "description": "Message delivery success rate",
+          "weight": 12.5
+        },
+        {
+          "name": "throughput",
+          "label": "Throughput",
+          "description": "Data transfer rate",
+          "weight": 12.5
+        },
+        {
+          "name": "jitter",
+          "label": "Jitter",
+          "description": "Variation in latency",
+          "weight": 12.5
+        },
+        {
+          "name": "ordering",
+          "label": "Ordering",
+          "description": "Message sequence preservation",
+          "weight": 12.5
+        },
+        {
+          "name": "dataIntegrity",
+          "label": "Data Integrity",
+          "description": "Data accuracy and consistency",
+          "weight": 12.5
+        },
+        {
+          "name": "resourceUsage",
+          "label": "Resource Usage",
+          "description": "CPU and memory consumption",
+          "weight": 12.5
+        },
+        {
+          "name": "securityOverhead",
+          "label": "Security Overhead",
+          "description": "Encryption/authentication cost",
+          "weight": 12.5
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "Stable Network",
+          "description": "Ideal conditions with consistent connectivity",
+          "latency": 10,
+          "packetLoss": 0,
+          "jitter": 2,
+          "unstable": false
+        }
+      ],
+      "progress": {
+        "current": 1,
+        "total": 3,
+        "currentProtocol": "MQTT",
+        "currentScenario": "Stable Network",
+        "completed": 1
+      }
+    },
+    {
+      "_id": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "userId": null,
+      "configuration": {
+        "testName": "Test 1779789282255",
+        "attributes": [
+          {
+            "name": "latency",
+            "label": "Latency",
+            "description": "Time delay in message transmission",
+            "weight": 12.5
+          },
+          {
+            "name": "reliability",
+            "label": "Reliability",
+            "description": "Message delivery success rate",
+            "weight": 12.5
+          },
+          {
+            "name": "throughput",
+            "label": "Throughput",
+            "description": "Data transfer rate",
+            "weight": 12.5
+          },
+          {
+            "name": "jitter",
+            "label": "Jitter",
+            "description": "Variation in latency",
+            "weight": 12.5
+          },
+          {
+            "name": "ordering",
+            "label": "Ordering",
+            "description": "Message sequence preservation",
+            "weight": 12.5
+          },
+          {
+            "name": "dataIntegrity",
+            "label": "Data Integrity",
+            "description": "Data accuracy and consistency",
+            "weight": 12.5
+          },
+          {
+            "name": "resourceUsage",
+            "label": "Resource Usage",
+            "description": "CPU and memory consumption",
+            "weight": 12.5
+          },
+          {
+            "name": "securityOverhead",
+            "label": "Security Overhead",
+            "description": "Encryption/authentication cost",
+            "weight": 12.5
+          }
+        ],
+        "selectedProtocols": [
+          "MQTT"
+        ],
+        "scenarios": [
+          {
+            "name": "Stable Network",
+            "description": "Ideal conditions with consistent connectivity",
+            "latency": 10,
+            "packetLoss": 0,
+            "jitter": 2,
+            "unstable": false
+          }
+        ],
+        "messageSize": 1024,
+        "messageFrequency": 100,
+        "protocolConfig": {
+          "mqttBrokerUrl": "mqtt://broker.emqx.io:1883",
+          "httpEndpoint": "https://httpbin.org/post",
+          "websocketUrl": "wss://echo.websocket.org",
+          "coapServerUrl": "coap://coap.me"
+        }
+      },
+      "status": "completed",
+      "startTime": "2026-05-26T09:54:42.262Z",
+      "protocols": [
+        "MQTT"
+      ],
+      "attributes": [
+        {
+          "name": "latency",
+          "label": "Latency",
+          "description": "Time delay in message transmission",
+          "weight": 12.5
+        },
+        {
+          "name": "reliability",
+          "label": "Reliability",
+          "description": "Message delivery success rate",
+          "weight": 12.5
+        },
+        {
+          "name": "throughput",
+          "label": "Throughput",
+          "description": "Data transfer rate",
+          "weight": 12.5
+        },
+        {
+          "name": "jitter",
+          "label": "Jitter",
+          "description": "Variation in latency",
+          "weight": 12.5
+        },
+        {
+          "name": "ordering",
+          "label": "Ordering",
+          "description": "Message sequence preservation",
+          "weight": 12.5
+        },
+        {
+          "name": "dataIntegrity",
+          "label": "Data Integrity",
+          "description": "Data accuracy and consistency",
+          "weight": 12.5
+        },
+        {
+          "name": "resourceUsage",
+          "label": "Resource Usage",
+          "description": "CPU and memory consumption",
+          "weight": 12.5
+        },
+        {
+          "name": "securityOverhead",
+          "label": "Security Overhead",
+          "description": "Encryption/authentication cost",
+          "weight": 12.5
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "Stable Network",
+          "description": "Ideal conditions with consistent connectivity",
+          "latency": 10,
+          "packetLoss": 0,
+          "jitter": 2,
+          "unstable": false
+        }
+      ],
+      "progress": {
+        "current": 1,
+        "total": 1,
+        "currentProtocol": null,
+        "currentScenario": null,
+        "completed": 1
+      },
+      "endTime": "2026-05-26T09:54:46.752Z",
+      "results": {
+        "MQTT": {
+          "score": 50,
+          "metrics": {
+            "latency": 852.4090909090909,
+            "jitter": 1598,
+            "reliability": 22,
+            "throughput": 41316.82714351215,
+            "ordering": 95,
+            "dataIntegrity": 98,
+            "resourceUsage": 15,
+            "securityOverhead": 5,
+            "testDuration": 4371
+          },
+          "recommendation": "May not be optimal for your requirements. Consider other protocols that better align with your priorities."
+        }
+      }
+    }
+  ],
+  "testResults": [
+    {
+      "_id": "2e84fb31-ade3-45da-9746-b4fc251b872c",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "protocol": "MQTT",
+      "scenario": "Stable Network",
+      "metrics": {
+        "latency": 852.4090909090909,
+        "jitter": 1598,
+        "reliability": 22,
+        "throughput": 41316.82714351215,
+        "ordering": 95,
+        "dataIntegrity": 98,
+        "resourceUsage": 15,
+        "securityOverhead": 5,
+        "testDuration": 4371
+      },
+      "timestamp": "2026-05-26T09:54:46.746Z"
+    }
+  ],
+  "testLogs": [
+    {
+      "_id": "d5e2e10b-3c14-41fa-882f-d293da815cb6",
+      "testRunId": "1062511b-6c71-41aa-90ff-c36cc4751da6",
+      "timestamp": "2026-05-26T09:39:14.852Z",
+      "type": "setup",
+      "message": "Setting up MQTT test",
+      "protocol": "MQTT",
+      "scenario": "Stable Network",
+      "testNumber": 1,
+      "totalTests": 3
+    },
+    {
+      "_id": "18d36aa3-7a10-4f8e-9d6a-a4fe0f505480",
+      "testRunId": "1062511b-6c71-41aa-90ff-c36cc4751da6",
+      "timestamp": "2026-05-26T09:39:14.855Z",
+      "type": "setup",
+      "message": "Initializing MQTT tester",
+      "protocol": "MQTT"
+    },
+    {
+      "_id": "390dec87-0b4d-4f74-9f4d-156803353b56",
+      "testRunId": "1062511b-6c71-41aa-90ff-c36cc4751da6",
+      "timestamp": "2026-05-26T09:39:14.856Z",
+      "type": "setup",
+      "message": "Applying network conditions: {\"packetLoss\":0,\"latency\":10,\"jitter\":2,\"bandwidth\":null,\"unstable\":false}",
+      "protocol": "MQTT",
+      "networkConditions": {
+        "packetLoss": 0,
+        "latency": 10,
+        "jitter": 2,
+        "bandwidth": null,
+        "unstable": false
+      }
+    },
+    {
+      "_id": "e473b236-9f0e-4642-bb4b-1e43cebc544e",
+      "testRunId": "1062511b-6c71-41aa-90ff-c36cc4751da6",
+      "timestamp": "2026-05-26T09:39:14.856Z",
+      "type": "setup",
+      "message": "Initializing MQTT client connection",
+      "protocol": "MQTT"
+    },
+    {
+      "_id": "6e3aecc5-f92b-4ab1-9045-5841d83c751e",
+      "testRunId": "1062511b-6c71-41aa-90ff-c36cc4751da6",
+      "timestamp": "2026-05-26T09:39:14.857Z",
+      "type": "connect",
+      "message": "Connecting to MQTT broker: mqtt://broker.emqx.io:1883",
+      "protocol": "MQTT",
+      "broker": "mqtt://broker.emqx.io:1883"
+    },
+    {
+      "_id": "ebf2705f-a8b4-4755-b98f-10c7faa53125",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.370Z",
+      "type": "setup",
+      "message": "Setting up MQTT test",
+      "protocol": "MQTT",
+      "scenario": "Stable Network",
+      "testNumber": 1,
+      "totalTests": 1
+    },
+    {
+      "_id": "6501b9d7-c903-43a2-a60e-c5a996e87b81",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.377Z",
+      "type": "setup",
+      "message": "Initializing MQTT tester",
+      "protocol": "MQTT"
+    },
+    {
+      "_id": "1c673eae-66cb-4d74-b785-82837bbc68df",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.379Z",
+      "type": "setup",
+      "message": "Applying network conditions: {\"packetLoss\":0,\"latency\":10,\"jitter\":2,\"bandwidth\":null,\"unstable\":false}",
+      "protocol": "MQTT",
+      "networkConditions": {
+        "packetLoss": 0,
+        "latency": 10,
+        "jitter": 2,
+        "bandwidth": null,
+        "unstable": false
+      }
+    },
+    {
+      "_id": "b42e52e2-aca0-4fc8-964e-e8d84e044d73",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.380Z",
+      "type": "setup",
+      "message": "Initializing MQTT client connection",
+      "protocol": "MQTT"
+    },
+    {
+      "_id": "3a693a40-4c02-4bb8-a1ad-59bf03368760",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.382Z",
+      "type": "connect",
+      "message": "Connecting to MQTT broker: mqtt://broker.emqx.io:1883",
+      "protocol": "MQTT",
+      "broker": "mqtt://broker.emqx.io:1883"
+    },
+    {
+      "_id": "044c8eaa-958d-4a5d-ab23-d301b29ae1b7",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.872Z",
+      "type": "connect",
+      "message": "MQTT connection established",
+      "protocol": "MQTT",
+      "success": true
+    },
+    {
+      "_id": "823163ff-a4e4-43e2-b78e-aa39a90e681f",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:42.874Z",
+      "type": "setup",
+      "message": "Subscribing to topic: test/topic/1779789282872",
+      "protocol": "MQTT",
+      "topic": "test/topic/1779789282872"
+    },
+    {
+      "_id": "60048554-069c-4c04-a7ad-07302d66bd9c",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.086Z",
+      "type": "setup",
+      "message": "Subscribed to topic. Starting to send 100 messages",
+      "protocol": "MQTT",
+      "messageCount": 100,
+      "messageSize": 1024
+    },
+    {
+      "_id": "19e2f02d-723a-4752-ad10-4eb93497b6b3",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.224Z",
+      "type": "send",
+      "message": "Sent 10/100 messages",
+      "protocol": "MQTT",
+      "progress": "10.0%"
+    },
+    {
+      "_id": "5a260e62-b570-4889-8fe1-e36f7c14a33c",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.397Z",
+      "type": "send",
+      "message": "Sent 20/100 messages",
+      "protocol": "MQTT",
+      "progress": "20.0%"
+    },
+    {
+      "_id": "6b3746fe-a63d-4a08-a612-73815e30ca63",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.554Z",
+      "type": "send",
+      "message": "Sent 30/100 messages",
+      "protocol": "MQTT",
+      "progress": "30.0%"
+    },
+    {
+      "_id": "ce7eb7bb-0f82-433b-b695-06c002c786e7",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.718Z",
+      "type": "send",
+      "message": "Sent 40/100 messages",
+      "protocol": "MQTT",
+      "progress": "40.0%"
+    },
+    {
+      "_id": "f79c1eac-f09d-4e09-a89e-43febd4dae4e",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.878Z",
+      "type": "send",
+      "message": "Sent 50/100 messages",
+      "protocol": "MQTT",
+      "progress": "50.0%"
+    },
+    {
+      "_id": "e3261461-0a0e-47f3-b39d-ce0b8214eedd",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:43.950Z",
+      "type": "receive",
+      "message": "Received 10 messages. Avg latency: 654.20ms",
+      "protocol": "MQTT",
+      "receivedCount": 10,
+      "avgLatency": 654.2
+    },
+    {
+      "_id": "4efd4d49-1e96-4617-9e4b-a39532a0d1ab",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.049Z",
+      "type": "send",
+      "message": "Sent 60/100 messages",
+      "protocol": "MQTT",
+      "progress": "60.0%"
+    },
+    {
+      "_id": "34e3fcec-ec34-4c1c-ad59-90f393450f84",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.162Z",
+      "type": "receive",
+      "message": "Received 20 messages. Avg latency: 755.80ms",
+      "protocol": "MQTT",
+      "receivedCount": 20,
+      "avgLatency": 755.8
+    },
+    {
+      "_id": "8cd65c02-8471-4f25-84a4-fcd3d9cdafe7",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.229Z",
+      "type": "send",
+      "message": "Sent 70/100 messages",
+      "protocol": "MQTT",
+      "progress": "70.0%"
+    },
+    {
+      "_id": "d34cd2e2-8f39-4ea4-8ff9-f32ad1f94c88",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.401Z",
+      "type": "send",
+      "message": "Sent 80/100 messages",
+      "protocol": "MQTT",
+      "progress": "80.0%"
+    },
+    {
+      "_id": "56f6458f-042e-4269-80ab-517715b55237",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.565Z",
+      "type": "send",
+      "message": "Sent 90/100 messages",
+      "protocol": "MQTT",
+      "progress": "90.0%"
+    },
+    {
+      "_id": "aa092745-fb3f-4389-bc9d-11a8879d4d18",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.730Z",
+      "type": "send",
+      "message": "Sent 100/100 messages",
+      "protocol": "MQTT",
+      "progress": "100.0%"
+    },
+    {
+      "_id": "ebd4aa23-ff50-499e-b47f-52963439727e",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:44.732Z",
+      "type": "send",
+      "message": "Finished sending all 100 messages. Waiting for responses...",
+      "protocol": "MQTT",
+      "sentCount": 100,
+      "receivedCount": 20
+    },
+    {
+      "_id": "083d71d8-b811-444d-adf9-61330b2078ed",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:46.736Z",
+      "type": "calculate",
+      "message": "Calculating final metrics",
+      "protocol": "MQTT",
+      "sentCount": 100,
+      "receivedCount": 22,
+      "latencySamples": 22
+    },
+    {
+      "_id": "c112a974-7ea3-4d72-8ff2-a7871a0fada8",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:46.738Z",
+      "type": "calculate",
+      "message": "Latency: 852.41ms | Jitter: 1598.00ms | Formula: avg(all_latencies), max-min(sorted_latencies)",
+      "protocol": "MQTT",
+      "formula": "Latency = Σ(latency_i) / n, Jitter = max(latency) - min(latency)"
+    },
+    {
+      "_id": "437d77df-d6fe-41cd-a90d-813f45fee9a7",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:46.740Z",
+      "type": "calculate",
+      "message": "Reliability: 22.0% | Throughput: 41.32kbps | Formula: (received/sent)*100, (received*size*8)/duration",
+      "protocol": "MQTT",
+      "formula": "Reliability = (received / sent) × 100%, Throughput = (received × messageSize × 8) / duration"
+    },
+    {
+      "_id": "48e26327-de3e-4943-a7fb-f0b77faf93e9",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:46.742Z",
+      "type": "complete",
+      "message": "MQTT test completed. Final metrics calculated.",
+      "protocol": "MQTT",
+      "metrics": {
+        "latency": 852.4090909090909,
+        "jitter": 1598,
+        "reliability": 22,
+        "throughput": 41316.82714351215,
+        "ordering": 95,
+        "dataIntegrity": 98,
+        "resourceUsage": 15,
+        "securityOverhead": 5
+      }
+    },
+    {
+      "_id": "e44198d0-97a2-4431-b43c-e529674591a5",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:46.744Z",
+      "type": "calculate",
+      "message": "Calculated metrics for MQTT",
+      "protocol": "MQTT",
+      "metrics": {
+        "latency": 852.4090909090909,
+        "jitter": 1598,
+        "reliability": 22,
+        "throughput": 41316.82714351215,
+        "ordering": 95,
+        "dataIntegrity": 98,
+        "resourceUsage": 15,
+        "securityOverhead": 5,
+        "testDuration": 4371
+      },
+      "duration": 4371
+    },
+    {
+      "_id": "b440c4ed-72e2-4e5a-b55d-a7d4a9b7e070",
+      "testRunId": "1cc82005-fa36-4144-9727-694c5bd8a183",
+      "timestamp": "2026-05-26T09:54:46.748Z",
+      "type": "complete",
+      "message": "Completed MQTT test",
+      "protocol": "MQTT",
+      "scenario": "Stable Network",
+      "metrics": {
+        "latency": 852.4090909090909,
+        "jitter": 1598,
+        "reliability": 22,
+        "throughput": 41316.82714351215,
+        "ordering": 95,
+        "dataIntegrity": 98,
+        "resourceUsage": 15,
+        "securityOverhead": 5,
+        "testDuration": 4371
+      }
+    }
+  ],
+  "protocols": [
+    {
+      "name": "MQTT",
+      "description": "Message Queuing Telemetry Transport",
+      "supported": true,
+      "features": [
+        "QoS levels",
+        "Pub/Sub",
+        "Lightweight"
+      ]
+    },
+    {
+      "name": "HTTP",
+      "description": "Hypertext Transfer Protocol",
+      "supported": true,
+      "features": [
+        "Request/Response",
+        "RESTful",
+        "Widely supported"
+      ]
+    },
+    {
+      "name": "WebSocket",
+      "description": "Full-duplex communication protocol",
+      "supported": true,
+      "features": [
+        "Full-duplex",
+        "Low latency",
+        "Real-time"
+      ]
+    },
+    {
+      "name": "CoAP",
+      "description": "Constrained Application Protocol",
+      "supported": true,
+      "features": [
+        "IoT optimized",
+        "UDP-based",
+        "Low overhead"
+      ]
+    }
+  ]
+}

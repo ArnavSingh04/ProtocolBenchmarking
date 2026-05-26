@@ -1,0 +1,162 @@
+.attribute-selector {
+  width: 100%;
+}
+
+.attribute-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.2s;
+  gap: 1rem;
+}
+
+.reorder-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.move-btn {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.move-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: scale(1.1);
+}
+
+.move-btn:active {
+  transform: scale(0.95);
+}
+
+.attribute-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.slider-value-input {
+  min-width: 80px;
+}
+
+.number-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.attribute-info {
+  flex: 1;
+}
+
+.attribute-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.attribute-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.attribute-weight {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.attribute-description {
+  margin: 0 0 0.75rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.weight-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 5px;
+  background: #e9ecef;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.weight-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+}
+
+.weight-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+}
+
+.weight-summary {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f0f0f0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.total-weight {
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.total-weight.valid {
+  color: #28a745;
+}
+
+.total-weight.invalid {
+  color: #dc3545;
+}
+
+.weight-warning {
+  color: #dc3545;
+  font-size: 0.9rem;
+}
+

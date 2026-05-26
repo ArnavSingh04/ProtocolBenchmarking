@@ -1,0 +1,75 @@
+.protocol-selector {
+  width: 100%;
+}
+
+.protocol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.protocol-card {
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: white;
+  position: relative;
+}
+
+.protocol-card:hover {
+  border-color: #667eea;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+}
+
+.protocol-card.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.protocol-checkbox {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #667eea;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: #667eea;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.protocol-card.selected .protocol-checkbox {
+  background: #667eea;
+  color: white;
+}
+
+.protocol-name {
+  margin: 0.5rem 0;
+  font-size: 1.3rem;
+  color: #333;
+  font-weight: 700;
+}
+
+.protocol-description {
+  margin: 0.5rem 0 0 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.selection-hint {
+  text-align: center;
+  color: #dc3545;
+  margin-top: 1rem;
+  font-style: italic;
+}
+

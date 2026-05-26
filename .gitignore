@@ -1,0 +1,9 @@
+node_modules/
+.meteor/local/
+.meteor/versions
+*.log
+*.swp
+.DS_Store
+coverage/
+*.meteor-port
+
