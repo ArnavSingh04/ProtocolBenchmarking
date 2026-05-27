@@ -27,12 +27,21 @@ export class WebSocketTester {
 
     return new Promise((resolve, reject) => {
       try {
-        // Allow WebSocket URL to be configured via parameter, environment variable, or use default
-        const wsUrl =
-          providedUrl ||
-          process.env.WEBSOCKET_URL ||
-          process.env.WS_URL ||
-          "wss://echo.websocket.events";
+        const normalizeUrl = (url) => {
+          if (!url) return null;
+          if (url.includes("echo.websocket.org")) {
+            return "wss://echo.websocket.events";
+          }
+          return url;
+        };
+        const candidateUrls = [
+          normalizeUrl(providedUrl),
+          normalizeUrl(process.env.WEBSOCKET_URL),
+          normalizeUrl(process.env.WS_URL),
+          "wss://echo.websocket.events",
+          "wss://ws.ifelse.io"
+        ].filter(Boolean);
+        const wsUrl = candidateUrls[0];
 
         if (testRunId) {
           const { Meteor } = require("meteor/meteor");
@@ -44,28 +53,33 @@ export class WebSocketTester {
           });
         }
 
-        // Connect to WebSocket test server
-        const ws = new WebSocket(wsUrl);
+        const connectAndRun = (urlIndex = 0) => {
+          const activeUrl = candidateUrls[urlIndex];
+          const ws = new WebSocket(activeUrl);
 
-        // Set connection timeout
-        const connectTimeout = setTimeout(() => {
-          ws.close();
-          resolve({
-            latency: 0,
-            jitter: 0,
-            reliability: 0,
-            throughput: 0,
-            ordering: 0,
-            dataIntegrity: 0,
-            resourceUsage: 20,
-            securityOverhead: 8,
-            error: "Connection timeout"
-          });
-        }, 15000);
+          // Set connection timeout
+          const connectTimeout = setTimeout(() => {
+            ws.close();
+            if (urlIndex < candidateUrls.length - 1) {
+              connectAndRun(urlIndex + 1);
+              return;
+            }
+            resolve({
+              latency: 0,
+              jitter: 0,
+              reliability: 0,
+              throughput: 0,
+              ordering: 0,
+              dataIntegrity: 0,
+              resourceUsage: 20,
+              securityOverhead: 8,
+              error: "Connection timeout"
+            });
+          }, 15000);
 
-        ws.on("open", () => {
-          clearTimeout(connectTimeout);
-          const messageTimes = new Map();
+          ws.on("open", () => {
+            clearTimeout(connectTimeout);
+            const messageTimes = new Map();
 
           const sendMessage = (index) => {
             if (index >= messageCount || Date.now() - startTime > duration) {
@@ -112,27 +126,27 @@ export class WebSocketTester {
             }
           };
 
-          ws.on("message", (data) => {
-            const receiveTime = Date.now();
-            const msgIndex = Array.from(messageTimes.keys()).find(
-              (key) =>
-                messageTimes.get(key) &&
-                receiveTime - messageTimes.get(key) < 10000
-            );
+            ws.on("message", () => {
+              const receiveTime = Date.now();
+              const msgIndex = Array.from(messageTimes.keys()).find(
+                (key) =>
+                  messageTimes.get(key) &&
+                  receiveTime - messageTimes.get(key) < 10000
+              );
 
-            if (msgIndex !== undefined) {
-              const latency = receiveTime - messageTimes.get(msgIndex);
-              latencies.push(latency);
-              messageTimes.delete(msgIndex);
-              receivedCount++;
-            }
-          });
+              if (msgIndex !== undefined) {
+                const latency = receiveTime - messageTimes.get(msgIndex);
+                latencies.push(latency);
+                messageTimes.delete(msgIndex);
+                receivedCount++;
+              }
+            });
 
-          sendMessage(0);
+            sendMessage(0);
 
           // End test after duration
-          setTimeout(() => {
-            ws.close();
+            setTimeout(() => {
+              ws.close();
 
             // Calculate metrics
             if (latencies.length > 0) {
@@ -155,40 +169,49 @@ export class WebSocketTester {
             metrics.resourceUsage = 20;
             metrics.securityOverhead = 8;
 
-            resolve(metrics);
-          }, duration + 1000);
-        });
-
-        ws.on("error", (err) => {
-          clearTimeout(connectTimeout);
-
-          const errorMsg = err.message || "Connection error";
-          console.error(`[WebSocket] Connection error to ${wsUrl}:`, errorMsg);
-
-          if (testRunId) {
-            const { Meteor } = require("meteor/meteor");
-            Meteor.call("testLogs.add", testRunId, {
-              type: "connect",
-              message: `WebSocket connection error: ${errorMsg}`,
-              protocol: "WebSocket",
-              error: errorMsg,
-              url: wsUrl
-            });
-          }
-
-          ws.close();
-          resolve({
-            latency: 0,
-            jitter: 0,
-            reliability: 0,
-            throughput: 0,
-            ordering: 0,
-            dataIntegrity: 0,
-            resourceUsage: 20,
-            securityOverhead: 8,
-            error: errorMsg
+              resolve(metrics);
+            }, duration + 1000);
           });
-        });
+
+          ws.on("error", (err) => {
+            clearTimeout(connectTimeout);
+
+            const errorMsg = err.message || "Connection error";
+            console.error(
+              `[WebSocket] Connection error to ${activeUrl}:`,
+              errorMsg
+            );
+
+            if (testRunId) {
+              const { Meteor } = require("meteor/meteor");
+              Meteor.call("testLogs.add", testRunId, {
+                type: "connect",
+                message: `WebSocket connection error: ${errorMsg}`,
+                protocol: "WebSocket",
+                error: errorMsg,
+                url: activeUrl
+              });
+            }
+
+            ws.close();
+            if (urlIndex < candidateUrls.length - 1) {
+              connectAndRun(urlIndex + 1);
+              return;
+            }
+            resolve({
+              latency: 0,
+              jitter: 0,
+              reliability: 0,
+              throughput: 0,
+              ordering: 0,
+              dataIntegrity: 0,
+              resourceUsage: 20,
+              securityOverhead: 8,
+              error: errorMsg
+            });
+          });
+        };
+        connectAndRun(0);
       } catch (err) {
         resolve({
           latency: 0,

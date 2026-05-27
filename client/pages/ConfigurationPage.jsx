@@ -126,9 +126,15 @@ function ConfigurationPage() {
     return localStorage.getItem("httpEndpoint") || "https://httpbin.org/post";
   });
   const [websocketUrl, setWebsocketUrl] = useState(() => {
-    return (
-      localStorage.getItem("websocketUrl") || "wss://echo.websocket.events"
-    );
+    const stored = localStorage.getItem("websocketUrl");
+    if (!stored) {
+      return "wss://echo.websocket.events";
+    }
+    // Normalize deprecated endpoint that is no longer available.
+    if (stored.includes("echo.websocket.org")) {
+      return "wss://echo.websocket.events";
+    }
+    return stored;
   });
   const [coapServerUrl, setCoapServerUrl] = useState(() => {
     return localStorage.getItem("coapServerUrl") || "coap://coap.me";
@@ -179,18 +185,7 @@ function ConfigurationPage() {
         setIsRunning(false);
         console.log("Test run started with ID:", testRunId);
         setCurrentTestRunId(testRunId);
-
         navigate(`/live?testRunId=${testRunId}`);
-
-        if (window.liveProgressReloadTimer) {
-          clearTimeout(window.liveProgressReloadTimer);
-        }
-
-        window.liveProgressReloadTimer = setTimeout(() => {
-          console.log("Auto-reloading live progress page after 3 seconds");
-          delete window.liveProgressReloadTimer;
-          window.location.reload();
-        }, 800);
       })
       .catch((error) => {
         setIsRunning(false);

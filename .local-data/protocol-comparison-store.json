@@ -321,6 +321,342 @@
           "recommendation": "May not be optimal for your requirements. Consider other protocols that better align with your priorities."
         }
       }
+    },
+    {
+      "_id": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "userId": null,
+      "configuration": {
+        "testName": "Test 1779848396117",
+        "attributes": [
+          {
+            "name": "latency",
+            "label": "Latency",
+            "description": "Time delay in message transmission",
+            "weight": 12.5
+          },
+          {
+            "name": "reliability",
+            "label": "Reliability",
+            "description": "Message delivery success rate",
+            "weight": 12.5
+          },
+          {
+            "name": "throughput",
+            "label": "Throughput",
+            "description": "Data transfer rate",
+            "weight": 12.5
+          },
+          {
+            "name": "jitter",
+            "label": "Jitter",
+            "description": "Variation in latency",
+            "weight": 12.5
+          },
+          {
+            "name": "ordering",
+            "label": "Ordering",
+            "description": "Message sequence preservation",
+            "weight": 12.5
+          },
+          {
+            "name": "dataIntegrity",
+            "label": "Data Integrity",
+            "description": "Data accuracy and consistency",
+            "weight": 12.5
+          },
+          {
+            "name": "resourceUsage",
+            "label": "Resource Usage",
+            "description": "CPU and memory consumption",
+            "weight": 12.5
+          },
+          {
+            "name": "securityOverhead",
+            "label": "Security Overhead",
+            "description": "Encryption/authentication cost",
+            "weight": 12.5
+          }
+        ],
+        "selectedProtocols": [
+          "WebSocket"
+        ],
+        "scenarios": [
+          {
+            "name": "Stable Network",
+            "description": "Ideal conditions with consistent connectivity",
+            "latency": 10,
+            "packetLoss": 0,
+            "jitter": 2,
+            "unstable": false
+          }
+        ],
+        "messageSize": 1024,
+        "messageFrequency": 100,
+        "protocolConfig": {
+          "mqttBrokerUrl": "mqtt://broker.emqx.io:1883",
+          "httpEndpoint": "https://httpbin.org/post",
+          "websocketUrl": "wss://echo.websocket.org",
+          "coapServerUrl": "coap://coap.me"
+        }
+      },
+      "status": "completed",
+      "startTime": "2026-05-27T02:19:56.582Z",
+      "protocols": [
+        "WebSocket"
+      ],
+      "attributes": [
+        {
+          "name": "latency",
+          "label": "Latency",
+          "description": "Time delay in message transmission",
+          "weight": 12.5
+        },
+        {
+          "name": "reliability",
+          "label": "Reliability",
+          "description": "Message delivery success rate",
+          "weight": 12.5
+        },
+        {
+          "name": "throughput",
+          "label": "Throughput",
+          "description": "Data transfer rate",
+          "weight": 12.5
+        },
+        {
+          "name": "jitter",
+          "label": "Jitter",
+          "description": "Variation in latency",
+          "weight": 12.5
+        },
+        {
+          "name": "ordering",
+          "label": "Ordering",
+          "description": "Message sequence preservation",
+          "weight": 12.5
+        },
+        {
+          "name": "dataIntegrity",
+          "label": "Data Integrity",
+          "description": "Data accuracy and consistency",
+          "weight": 12.5
+        },
+        {
+          "name": "resourceUsage",
+          "label": "Resource Usage",
+          "description": "CPU and memory consumption",
+          "weight": 12.5
+        },
+        {
+          "name": "securityOverhead",
+          "label": "Security Overhead",
+          "description": "Encryption/authentication cost",
+          "weight": 12.5
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "Stable Network",
+          "description": "Ideal conditions with consistent connectivity",
+          "latency": 10,
+          "packetLoss": 0,
+          "jitter": 2,
+          "unstable": false
+        }
+      ],
+      "progress": {
+        "current": 1,
+        "total": 1,
+        "currentProtocol": null,
+        "currentScenario": null,
+        "completed": 1
+      },
+      "endTime": "2026-05-27T02:19:59.445Z",
+      "results": {
+        "WebSocket": {
+          "score": 50,
+          "metrics": {
+            "latency": 355,
+            "jitter": 594,
+            "reliability": 68,
+            "throughput": 111411.2,
+            "ordering": 98,
+            "dataIntegrity": 99,
+            "resourceUsage": 20,
+            "securityOverhead": 8,
+            "testDuration": 2746
+          },
+          "recommendation": "May not be optimal for your requirements. Consider other protocols that better align with your priorities."
+        }
+      }
+    },
+    {
+      "_id": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "userId": null,
+      "configuration": {
+        "testName": "Test 1779848620732",
+        "attributes": [
+          {
+            "name": "latency",
+            "label": "Latency",
+            "description": "Time delay in message transmission",
+            "weight": 12.5
+          },
+          {
+            "name": "reliability",
+            "label": "Reliability",
+            "description": "Message delivery success rate",
+            "weight": 12.5
+          },
+          {
+            "name": "throughput",
+            "label": "Throughput",
+            "description": "Data transfer rate",
+            "weight": 12.5
+          },
+          {
+            "name": "jitter",
+            "label": "Jitter",
+            "description": "Variation in latency",
+            "weight": 12.5
+          },
+          {
+            "name": "ordering",
+            "label": "Ordering",
+            "description": "Message sequence preservation",
+            "weight": 12.5
+          },
+          {
+            "name": "dataIntegrity",
+            "label": "Data Integrity",
+            "description": "Data accuracy and consistency",
+            "weight": 12.5
+          },
+          {
+            "name": "resourceUsage",
+            "label": "Resource Usage",
+            "description": "CPU and memory consumption",
+            "weight": 12.5
+          },
+          {
+            "name": "securityOverhead",
+            "label": "Security Overhead",
+            "description": "Encryption/authentication cost",
+            "weight": 12.5
+          }
+        ],
+        "selectedProtocols": [
+          "WebSocket"
+        ],
+        "scenarios": [
+          {
+            "name": "Stable Network",
+            "description": "Ideal conditions with consistent connectivity",
+            "latency": 10,
+            "packetLoss": 0,
+            "jitter": 2,
+            "unstable": false
+          }
+        ],
+        "messageSize": 1024,
+        "messageFrequency": 100,
+        "protocolConfig": {
+          "mqttBrokerUrl": "mqtt://broker.emqx.io:1883",
+          "httpEndpoint": "https://httpbin.org/post",
+          "websocketUrl": "wss://echo.websocket.events",
+          "coapServerUrl": "coap://coap.me"
+        }
+      },
+      "status": "completed",
+      "startTime": "2026-05-27T02:23:40.812Z",
+      "protocols": [
+        "WebSocket"
+      ],
+      "attributes": [
+        {
+          "name": "latency",
+          "label": "Latency",
+          "description": "Time delay in message transmission",
+          "weight": 12.5
+        },
+        {
+          "name": "reliability",
+          "label": "Reliability",
+          "description": "Message delivery success rate",
+          "weight": 12.5
+        },
+        {
+          "name": "throughput",
+          "label": "Throughput",
+          "description": "Data transfer rate",
+          "weight": 12.5
+        },
+        {
+          "name": "jitter",
+          "label": "Jitter",
+          "description": "Variation in latency",
+          "weight": 12.5
+        },
+        {
+          "name": "ordering",
+          "label": "Ordering",
+          "description": "Message sequence preservation",
+          "weight": 12.5
+        },
+        {
+          "name": "dataIntegrity",
+          "label": "Data Integrity",
+          "description": "Data accuracy and consistency",
+          "weight": 12.5
+        },
+        {
+          "name": "resourceUsage",
+          "label": "Resource Usage",
+          "description": "CPU and memory consumption",
+          "weight": 12.5
+        },
+        {
+          "name": "securityOverhead",
+          "label": "Security Overhead",
+          "description": "Encryption/authentication cost",
+          "weight": 12.5
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "Stable Network",
+          "description": "Ideal conditions with consistent connectivity",
+          "latency": 10,
+          "packetLoss": 0,
+          "jitter": 2,
+          "unstable": false
+        }
+      ],
+      "progress": {
+        "current": 1,
+        "total": 1,
+        "currentProtocol": null,
+        "currentScenario": null,
+        "completed": 1
+      },
+      "endTime": "2026-05-27T02:23:43.350Z",
+      "results": {
+        "WebSocket": {
+          "score": 50,
+          "metrics": {
+            "latency": 193.14285714285714,
+            "jitter": 295,
+            "reliability": 91,
+            "throughput": 149094.4,
+            "ordering": 98,
+            "dataIntegrity": 99,
+            "resourceUsage": 20,
+            "securityOverhead": 8,
+            "testDuration": 2423
+          },
+          "recommendation": "May not be optimal for your requirements. Consider other protocols that better align with your priorities."
+        }
+      }
     }
   ],
   "testResults": [
@@ -341,6 +677,42 @@
         "testDuration": 4371
       },
       "timestamp": "2026-05-26T09:54:46.746Z"
+    },
+    {
+      "_id": "535daf57-8def-4475-b0a7-7d81c4734408",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "protocol": "WebSocket",
+      "scenario": "Stable Network",
+      "metrics": {
+        "latency": 355,
+        "jitter": 594,
+        "reliability": 68,
+        "throughput": 111411.2,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "testDuration": 2746
+      },
+      "timestamp": "2026-05-27T02:19:59.439Z"
+    },
+    {
+      "_id": "4bbcb358-9bf4-4ace-ba20-4c30665898b0",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "protocol": "WebSocket",
+      "scenario": "Stable Network",
+      "metrics": {
+        "latency": 193.14285714285714,
+        "jitter": 295,
+        "reliability": 91,
+        "throughput": 149094.4,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "testDuration": 2423
+      },
+      "timestamp": "2026-05-27T02:23:43.343Z"
     }
   ],
   "testLogs": [
@@ -679,6 +1051,192 @@
         "resourceUsage": 15,
         "securityOverhead": 5,
         "testDuration": 4371
+      }
+    },
+    {
+      "_id": "2de6c63c-122b-4005-9c0e-fc5022dbc0d2",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "timestamp": "2026-05-27T02:19:56.689Z",
+      "type": "setup",
+      "message": "Setting up WebSocket test",
+      "protocol": "WebSocket",
+      "scenario": "Stable Network",
+      "testNumber": 1,
+      "totalTests": 1
+    },
+    {
+      "_id": "753d9c93-0cd9-4acc-988f-3afc7875c418",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "timestamp": "2026-05-27T02:19:56.707Z",
+      "type": "setup",
+      "message": "Initializing WebSocket tester",
+      "protocol": "WebSocket"
+    },
+    {
+      "_id": "41e5e42f-d903-4e64-9987-bdf6d8e1593b",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "timestamp": "2026-05-27T02:19:56.707Z",
+      "type": "setup",
+      "message": "Applying network conditions: {\"packetLoss\":0,\"latency\":10,\"jitter\":2,\"bandwidth\":null,\"unstable\":false}",
+      "protocol": "WebSocket",
+      "networkConditions": {
+        "packetLoss": 0,
+        "latency": 10,
+        "jitter": 2,
+        "bandwidth": null,
+        "unstable": false
+      }
+    },
+    {
+      "_id": "36178c00-e936-4adc-8a26-e21f267b1bdf",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "timestamp": "2026-05-27T02:19:56.708Z",
+      "type": "connect",
+      "message": "Connecting to WebSocket server: wss://echo.websocket.org",
+      "protocol": "WebSocket",
+      "url": "wss://echo.websocket.org"
+    },
+    {
+      "_id": "4968788a-2746-4135-ac88-f4fd47f92e2e",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "timestamp": "2026-05-27T02:19:59.437Z",
+      "type": "calculate",
+      "message": "Calculated metrics for WebSocket",
+      "protocol": "WebSocket",
+      "metrics": {
+        "latency": 355,
+        "jitter": 594,
+        "reliability": 68,
+        "throughput": 111411.2,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "testDuration": 2746
+      },
+      "duration": 2746
+    },
+    {
+      "_id": "56c45fcd-aeb5-4e01-a15e-0cebe7ebdea7",
+      "testRunId": "36220037-6460-438f-a16b-e1dc90f78d2c",
+      "timestamp": "2026-05-27T02:19:59.441Z",
+      "type": "complete",
+      "message": "Completed WebSocket test",
+      "protocol": "WebSocket",
+      "scenario": "Stable Network",
+      "metrics": {
+        "latency": 355,
+        "jitter": 594,
+        "reliability": 68,
+        "throughput": 111411.2,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "testDuration": 2746
+      }
+    },
+    {
+      "_id": "4defb477-0665-4e43-8114-2a9389f4c884",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:40.914Z",
+      "type": "setup",
+      "message": "Setting up WebSocket test",
+      "protocol": "WebSocket",
+      "scenario": "Stable Network",
+      "testNumber": 1,
+      "totalTests": 1
+    },
+    {
+      "_id": "393bd388-3ad9-4aa2-8816-947f991b3646",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:40.920Z",
+      "type": "setup",
+      "message": "Initializing WebSocket tester",
+      "protocol": "WebSocket"
+    },
+    {
+      "_id": "c9814b0f-5ff9-4ca8-aed5-40579bde69ce",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:40.921Z",
+      "type": "setup",
+      "message": "Applying network conditions: {\"packetLoss\":0,\"latency\":10,\"jitter\":2,\"bandwidth\":null,\"unstable\":false}",
+      "protocol": "WebSocket",
+      "networkConditions": {
+        "packetLoss": 0,
+        "latency": 10,
+        "jitter": 2,
+        "bandwidth": null,
+        "unstable": false
+      }
+    },
+    {
+      "_id": "5b1a3fe6-8bfb-4e4d-8c2f-a51350bfdd90",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:40.921Z",
+      "type": "connect",
+      "message": "Connecting to WebSocket server: wss://echo.websocket.events",
+      "protocol": "WebSocket",
+      "url": "wss://echo.websocket.events"
+    },
+    {
+      "_id": "d01f2bef-f7d0-46e5-914a-6d9792a82761",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:41.158Z",
+      "type": "connect",
+      "message": "WebSocket connection error: getaddrinfo ENOTFOUND echo.websocket.events",
+      "protocol": "WebSocket",
+      "error": "getaddrinfo ENOTFOUND echo.websocket.events",
+      "url": "wss://echo.websocket.events"
+    },
+    {
+      "_id": "b8248d8c-acd6-4102-9a78-c430cfe67bb7",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:41.165Z",
+      "type": "connect",
+      "message": "WebSocket connection error: getaddrinfo ENOTFOUND echo.websocket.events",
+      "protocol": "WebSocket",
+      "error": "getaddrinfo ENOTFOUND echo.websocket.events",
+      "url": "wss://echo.websocket.events"
+    },
+    {
+      "_id": "eecb82ff-afdc-4110-b7a1-5997f4523107",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:43.339Z",
+      "type": "calculate",
+      "message": "Calculated metrics for WebSocket",
+      "protocol": "WebSocket",
+      "metrics": {
+        "latency": 193.14285714285714,
+        "jitter": 295,
+        "reliability": 91,
+        "throughput": 149094.4,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "testDuration": 2423
+      },
+      "duration": 2423
+    },
+    {
+      "_id": "2689329a-a49f-4837-81a6-08ee745c977a",
+      "testRunId": "1fd37f27-ba7d-4bf9-83d0-5d3423f5caae",
+      "timestamp": "2026-05-27T02:23:43.346Z",
+      "type": "complete",
+      "message": "Completed WebSocket test",
+      "protocol": "WebSocket",
+      "scenario": "Stable Network",
+      "metrics": {
+        "latency": 193.14285714285714,
+        "jitter": 295,
+        "reliability": 91,
+        "throughput": 149094.4,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "testDuration": 2423
       }
     }
   ],

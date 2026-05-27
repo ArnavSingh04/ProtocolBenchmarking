@@ -56,6 +56,7 @@ export function useRunData(testRunId, includeLogs = false) {
     }
 
     let eventSource;
+    let pollIntervalId;
     let isCancelled = false;
 
     const loadSnapshot = async () => {
@@ -86,47 +87,68 @@ export function useRunData(testRunId, includeLogs = false) {
 
     loadSnapshot();
 
-    eventSource = new EventSource(
-      `/api/tests/stream?testRunId=${encodeURIComponent(testRunId)}`
-    );
+    const setupEventSource = () => {
+      if (isCancelled) return;
+      eventSource = new EventSource(
+        `/api/tests/stream?testRunId=${encodeURIComponent(testRunId)}`
+      );
 
-    eventSource.onmessage = (messageEvent) => {
-      if (isCancelled) {
-        return;
-      }
+      eventSource.onmessage = (messageEvent) => {
+        if (isCancelled) {
+          return;
+        }
 
-      const event = JSON.parse(messageEvent.data);
-      switch (event.type) {
-        case "snapshot":
-          setTestRun(event.payload.testRun || null);
-          setResults(event.payload.results || []);
-          if (includeLogs) {
-            setLogs(event.payload.logs || []);
+        try {
+          const event = JSON.parse(messageEvent.data);
+          switch (event.type) {
+            case "snapshot":
+              setTestRun(event.payload.testRun || null);
+              setResults(event.payload.results || []);
+              if (includeLogs) {
+                setLogs(event.payload.logs || []);
+              }
+              setIsLoading(false);
+              setHasLoaded(true);
+              setError(null);
+              break;
+            case "run_updated":
+              setTestRun(event.payload);
+              break;
+            case "result_added":
+              setResults((previous) => [...previous, event.payload]);
+              break;
+            case "log_added":
+              if (includeLogs) {
+                setLogs((previous) => [...previous, event.payload]);
+              }
+              break;
+            default:
+              break;
           }
-          setIsLoading(false);
-          setHasLoaded(true);
-          setError(null);
-          break;
-        case "run_updated":
-          setTestRun(event.payload);
-          break;
-        case "result_added":
-          setResults((previous) => [...previous, event.payload]);
-          break;
-        case "log_added":
-          if (includeLogs) {
-            setLogs((previous) => [...previous, event.payload]);
-          }
-          break;
-        default:
-          break;
-      }
+        } catch {
+          // Ignore malformed stream payloads and keep the connection alive.
+        }
+      };
+
+      eventSource.onerror = () => {
+        if (isCancelled) {
+          return;
+        }
+        eventSource?.close();
+      };
     };
+
+    setupEventSource();
+    // Poll as a safety net when SSE is unavailable after dev-server restarts.
+    pollIntervalId = setInterval(loadSnapshot, 4000);
 
     return () => {
       isCancelled = true;
       if (eventSource) {
         eventSource.close();
+      }
+      if (pollIntervalId) {
+        clearInterval(pollIntervalId);
       }
     };
   }, [testRunId, includeLogs]);

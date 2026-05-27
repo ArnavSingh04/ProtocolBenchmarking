@@ -26,11 +26,16 @@ async function requestJson(url, options = {}) {
 }
 
 export async function startRun(configuration) {
+  const generatedId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `run-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+
   const payload = await requestJson("/api/tests/startRun", {
     method: "POST",
-    body: JSON.stringify({ configuration })
+    body: JSON.stringify({ configuration, testRunId: generatedId })
   });
-  return payload.testRunId;
+  return payload.testRunId || generatedId;
 }
 
 export async function fetchRun(testRunId) {

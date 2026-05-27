@@ -19,6 +19,12 @@ function LiveProgressPage() {
     true
   );
 
+  useEffect(() => {
+    if (urlTestRunId && urlTestRunId !== currentTestRunId) {
+      setCurrentTestRunId(urlTestRunId);
+    }
+  }, [urlTestRunId, currentTestRunId, setCurrentTestRunId]);
+
   // Auto-scroll to bottom of logs
   const logContainerRef = useRef(null);
   useEffect(() => {
