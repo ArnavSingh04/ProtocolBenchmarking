@@ -657,6 +657,174 @@
           "recommendation": "May not be optimal for your requirements. Consider other protocols that better align with your priorities."
         }
       }
+    },
+    {
+      "_id": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "userId": null,
+      "configuration": {
+        "testName": "Test 1779854591571",
+        "attributes": [
+          {
+            "name": "latency",
+            "label": "Latency",
+            "description": "Time delay in message transmission",
+            "weight": 12.5
+          },
+          {
+            "name": "reliability",
+            "label": "Reliability",
+            "description": "Message delivery success rate",
+            "weight": 12.5
+          },
+          {
+            "name": "throughput",
+            "label": "Throughput",
+            "description": "Data transfer rate",
+            "weight": 12.5
+          },
+          {
+            "name": "jitter",
+            "label": "Jitter",
+            "description": "Variation in latency",
+            "weight": 12.5
+          },
+          {
+            "name": "ordering",
+            "label": "Ordering",
+            "description": "Message sequence preservation",
+            "weight": 12.5
+          },
+          {
+            "name": "dataIntegrity",
+            "label": "Data Integrity",
+            "description": "Data accuracy and consistency",
+            "weight": 12.5
+          },
+          {
+            "name": "resourceUsage",
+            "label": "Resource Usage",
+            "description": "CPU and memory consumption",
+            "weight": 12.5
+          },
+          {
+            "name": "securityOverhead",
+            "label": "Security Overhead",
+            "description": "Encryption/authentication cost",
+            "weight": 12.5
+          }
+        ],
+        "selectedProtocols": [
+          "WebSocket"
+        ],
+        "scenarios": [
+          {
+            "name": "Long Duration",
+            "description": "Extended session with sustained load",
+            "duration": 60000,
+            "messageFrequency": 10,
+            "latency": 15
+          }
+        ],
+        "messageSize": 1024,
+        "messageFrequency": 100,
+        "protocolConfig": {
+          "mqttBrokerUrl": "mqtt://broker.emqx.io:1883",
+          "httpEndpoint": "https://httpbin.org/post",
+          "websocketUrl": "wss://websocket-echo.com/",
+          "coapServerUrl": "coap://coap.me"
+        }
+      },
+      "status": "completed",
+      "startTime": "2026-05-27T04:03:11.756Z",
+      "protocols": [
+        "WebSocket"
+      ],
+      "attributes": [
+        {
+          "name": "latency",
+          "label": "Latency",
+          "description": "Time delay in message transmission",
+          "weight": 12.5
+        },
+        {
+          "name": "reliability",
+          "label": "Reliability",
+          "description": "Message delivery success rate",
+          "weight": 12.5
+        },
+        {
+          "name": "throughput",
+          "label": "Throughput",
+          "description": "Data transfer rate",
+          "weight": 12.5
+        },
+        {
+          "name": "jitter",
+          "label": "Jitter",
+          "description": "Variation in latency",
+          "weight": 12.5
+        },
+        {
+          "name": "ordering",
+          "label": "Ordering",
+          "description": "Message sequence preservation",
+          "weight": 12.5
+        },
+        {
+          "name": "dataIntegrity",
+          "label": "Data Integrity",
+          "description": "Data accuracy and consistency",
+          "weight": 12.5
+        },
+        {
+          "name": "resourceUsage",
+          "label": "Resource Usage",
+          "description": "CPU and memory consumption",
+          "weight": 12.5
+        },
+        {
+          "name": "securityOverhead",
+          "label": "Security Overhead",
+          "description": "Encryption/authentication cost",
+          "weight": 12.5
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "Long Duration",
+          "description": "Extended session with sustained load",
+          "duration": 60000,
+          "messageFrequency": 10,
+          "latency": 15
+        }
+      ],
+      "progress": {
+        "current": 1,
+        "total": 1,
+        "currentProtocol": null,
+        "currentScenario": null,
+        "completed": 1
+      },
+      "endTime": "2026-05-27T04:03:16.351Z",
+      "results": {
+        "WebSocket": {
+          "score": 50,
+          "metrics": {
+            "latency": 256.8,
+            "jitter": 104,
+            "reliability": 100,
+            "throughput": 14686.26747938329,
+            "ordering": 98,
+            "dataIntegrity": 99,
+            "resourceUsage": 20,
+            "securityOverhead": 8,
+            "sentCount": 10,
+            "receivedCount": 10,
+            "testDuration": 4576
+          },
+          "recommendation": "May not be optimal for your requirements. Consider other protocols that better align with your priorities."
+        }
+      }
     }
   ],
   "testResults": [
@@ -713,6 +881,27 @@
         "testDuration": 2423
       },
       "timestamp": "2026-05-27T02:23:43.343Z"
+    },
+    {
+      "_id": "24c7eea9-7243-4069-ba3d-45538c964e6e",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "protocol": "WebSocket",
+      "scenario": "Long Duration",
+      "metrics": {
+        "latency": 256.8,
+        "jitter": 104,
+        "reliability": 100,
+        "throughput": 14686.26747938329,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "connectedUrl": "wss://websocket-echo.com/",
+        "sentCount": 10,
+        "receivedCount": 10,
+        "testDuration": 4576
+      },
+      "timestamp": "2026-05-27T04:03:16.346Z"
     }
   ],
   "testLogs": [
@@ -1237,6 +1426,104 @@
         "resourceUsage": 20,
         "securityOverhead": 8,
         "testDuration": 2423
+      }
+    },
+    {
+      "_id": "92279ba8-350a-41a5-aa4d-0cacf728bf45",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:11.762Z",
+      "type": "setup",
+      "message": "Setting up WebSocket test",
+      "protocol": "WebSocket",
+      "scenario": "Long Duration",
+      "testNumber": 1,
+      "totalTests": 1
+    },
+    {
+      "_id": "5eb1ad4e-4daa-4a3b-b34a-776b4b323c39",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:11.780Z",
+      "type": "setup",
+      "message": "Initializing WebSocket tester",
+      "protocol": "WebSocket"
+    },
+    {
+      "_id": "b6499861-ae49-486b-b880-aeeceb6f24a1",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:11.781Z",
+      "type": "setup",
+      "message": "Applying network conditions: {\"packetLoss\":0,\"latency\":15,\"jitter\":0,\"bandwidth\":null,\"unstable\":false}",
+      "protocol": "WebSocket",
+      "networkConditions": {
+        "packetLoss": 0,
+        "latency": 15,
+        "jitter": 0,
+        "bandwidth": null,
+        "unstable": false
+      }
+    },
+    {
+      "_id": "8d8e8a21-c031-4bfe-b7a5-56fda0d4c221",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:11.782Z",
+      "type": "connect",
+      "message": "Connecting to WebSocket server: wss://websocket-echo.com/",
+      "protocol": "WebSocket",
+      "url": "wss://websocket-echo.com/"
+    },
+    {
+      "_id": "649cfbc9-49c8-425e-b63b-95e4bf121754",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:16.341Z",
+      "type": "connect",
+      "message": "WebSocket connected successfully: wss://websocket-echo.com/",
+      "protocol": "WebSocket",
+      "url": "wss://websocket-echo.com/"
+    },
+    {
+      "_id": "d5d0e933-2c58-459e-abd0-6afd24f14e7f",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:16.344Z",
+      "type": "calculate",
+      "message": "Calculated metrics for WebSocket",
+      "protocol": "WebSocket",
+      "metrics": {
+        "latency": 256.8,
+        "jitter": 104,
+        "reliability": 100,
+        "throughput": 14686.26747938329,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "connectedUrl": "wss://websocket-echo.com/",
+        "sentCount": 10,
+        "receivedCount": 10,
+        "testDuration": 4576
+      },
+      "duration": 4576
+    },
+    {
+      "_id": "0d3af678-2adb-4aba-962c-780bc3d96465",
+      "testRunId": "e8fb7dae-a5d6-4bc9-974b-515040aee5e4",
+      "timestamp": "2026-05-27T04:03:16.348Z",
+      "type": "complete",
+      "message": "Completed WebSocket test",
+      "protocol": "WebSocket",
+      "scenario": "Long Duration",
+      "metrics": {
+        "latency": 256.8,
+        "jitter": 104,
+        "reliability": 100,
+        "throughput": 14686.26747938329,
+        "ordering": 98,
+        "dataIntegrity": 99,
+        "resourceUsage": 20,
+        "securityOverhead": 8,
+        "connectedUrl": "wss://websocket-echo.com/",
+        "sentCount": 10,
+        "receivedCount": 10,
+        "testDuration": 4576
       }
     }
   ],

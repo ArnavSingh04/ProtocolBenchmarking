@@ -1,5 +1,9 @@
 import { startRun } from "../../../lib/server/runService";
 
+export const config = {
+  maxDuration: 300
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");

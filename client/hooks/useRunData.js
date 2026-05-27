@@ -59,8 +59,12 @@ export function useRunData(testRunId, includeLogs = false) {
     let pollIntervalId;
     let isCancelled = false;
 
+    let hasInitialLoad = false;
+
     const loadSnapshot = async () => {
-      setIsLoading(true);
+      if (!hasInitialLoad) {
+        setIsLoading(true);
+      }
       setError(null);
       try {
         const [run, runResults, runLogs] = await Promise.all([
@@ -75,6 +79,7 @@ export function useRunData(testRunId, includeLogs = false) {
           setLogs(runLogs);
           setIsLoading(false);
           setHasLoaded(true);
+          hasInitialLoad = true;
         }
       } catch (err) {
         if (!isCancelled) {

@@ -1,12 +1,18 @@
 // Chatgpt by openAI was used to assist in the writing the code for the following file
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTestRunContext } from "../contexts/TestRunContext";
 import { useHistoryData } from "../hooks/useRunData";
 
 function HistoryPage() {
   const navigate = useNavigate();
-
+  const { setActiveTestRunId } = useTestRunContext();
   const { testRuns, isLoading } = useHistoryData();
+
+  const openRun = (runId) => {
+    setActiveTestRunId(runId);
+    navigate(`/results?testRunId=${runId}`);
+  };
 
   if (isLoading) {
     return (
@@ -36,7 +42,7 @@ function HistoryPage() {
             <div
               key={run._id}
               className="test-run-card"
-              onClick={() => navigate(`/results?testRunId=${run._id}`)}
+              onClick={() => openRun(run._id)}
             >
               <div className="card-header">
                 <h3>
@@ -98,20 +104,23 @@ function HistoryPage() {
                   className="view-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/results?testRunId=${run._id}`);
+                    openRun(run._id);
                   }}
                 >
-                  View Results
+                  View Results & Dashboard
                 </button>
-                <button
-                  className="dashboard-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/dashboard?testRunId=${run._id}`);
-                  }}
-                >
-                  View Dashboard
-                </button>
+                {run.status === "running" && (
+                  <button
+                    className="dashboard-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTestRunId(run._id);
+                      navigate(`/live?testRunId=${run._id}`);
+                    }}
+                  >
+                    Live Progress
+                  </button>
+                )}
               </div>
             </div>
           ))}

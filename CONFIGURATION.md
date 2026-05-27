@@ -9,7 +9,7 @@ The easiest way to configure all protocol endpoints is through the UI:
 3. Configure endpoints for the protocols you're testing:
    - **MQTT Broker URL** (e.g., `mqtt://192.168.0.17:1883`)
    - **HTTP Endpoint** (e.g., `https://webhook.site/your-id`)
-   - **WebSocket URL** (e.g., `wss://echo.websocket.org` or `ws://localhost:8080`)
+   - **WebSocket URL** (e.g., `wss://websocket-echo.com/` or `wss://echo.websocket.org`)
    - **CoAP Server URL** (e.g., `coap://localhost:5683`)
 4. Settings are automatically saved to localStorage and will be remembered for future tests
 
@@ -67,7 +67,7 @@ protocolConfig: {
 }
 ```
 
-Default: `wss://echo.websocket.org` (public echo server)
+Default: `wss://websocket-echo.com/` (with fallbacks to `wss://echo.websocket.org` and `wss://ws.ifelse.io`)
 
 ## CoAP Server Configuration
 

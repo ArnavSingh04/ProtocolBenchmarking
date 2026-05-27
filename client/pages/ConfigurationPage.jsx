@@ -1,5 +1,5 @@
 // Chatgpt by openAI was used to assist in the writing the code for the following file
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTestRunContext } from "../contexts/TestRunContext";
 import AttributeSelector from "../components/AttributeSelector";
@@ -95,7 +95,7 @@ const AVAILABLE_SCENARIOS = [
 
 function ConfigurationPage() {
   const navigate = useNavigate();
-  const { setCurrentTestRunId } = useTestRunContext();
+  const { setActiveTestRunId, refreshSession } = useTestRunContext();
   const [attributes, setAttributes] = useState(
     QUALITY_ATTRIBUTES.map((attr) => ({ ...attr, weight: 12.5 }))
   );
@@ -128,17 +128,26 @@ function ConfigurationPage() {
   const [websocketUrl, setWebsocketUrl] = useState(() => {
     const stored = localStorage.getItem("websocketUrl");
     if (!stored) {
-      return "wss://echo.websocket.events";
+      return "wss://websocket-echo.com/";
     }
-    // Normalize deprecated endpoint that is no longer available.
-    if (stored.includes("echo.websocket.org")) {
-      return "wss://echo.websocket.events";
+    // Fix broken hostname that does not resolve on most networks.
+    if (stored.includes("echo.websocket.events")) {
+      return "wss://websocket-echo.com/";
     }
     return stored;
   });
   const [coapServerUrl, setCoapServerUrl] = useState(() => {
     return localStorage.getItem("coapServerUrl") || "coap://coap.me";
   });
+
+  useEffect(() => {
+    const stored = localStorage.getItem("websocketUrl");
+    if (stored?.includes("echo.websocket.events")) {
+      const fixed = "wss://websocket-echo.com/";
+      localStorage.setItem("websocketUrl", fixed);
+      setWebsocketUrl(fixed);
+    }
+  }, []);
 
   const handleAttributeWeightChange = (name, weight) => {
     setAttributes((attrs) =>
@@ -184,7 +193,8 @@ function ConfigurationPage() {
       .then((testRunId) => {
         setIsRunning(false);
         console.log("Test run started with ID:", testRunId);
-        setCurrentTestRunId(testRunId);
+        setActiveTestRunId(testRunId);
+        refreshSession();
         navigate(`/live?testRunId=${testRunId}`);
       })
       .catch((error) => {
@@ -288,7 +298,7 @@ function ConfigurationPage() {
               <label htmlFor="websocket-url">
                 WebSocket Server URL
                 <span className="field-hint">
-                  (e.g., wss://echo.websocket.events or ws://localhost:8080)
+                  (e.g., wss://websocket-echo.com/ or wss://echo.websocket.org)
                 </span>
               </label>
               <input
@@ -296,7 +306,7 @@ function ConfigurationPage() {
                 type="text"
                 value={websocketUrl}
                 onChange={(e) => setWebsocketUrl(e.target.value)}
-                placeholder="wss://echo.websocket.events"
+                placeholder="wss://websocket-echo.com/"
                 className="protocol-input"
               />
             </div>

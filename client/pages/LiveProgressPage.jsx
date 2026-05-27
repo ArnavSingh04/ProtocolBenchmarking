@@ -1,29 +1,23 @@
 // Chatgpt by openAI was used to assist in the writing the code for the following file
 import React, { useState, useEffect, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTestRunContext } from "../contexts/TestRunContext";
+import { useEffectiveTestRunId } from "../hooks/useEffectiveTestRunId";
 import ProtocolComparisonChart from "../components/charts/ProtocolComparisonChart";
 import LatencyTrendChart from "../components/charts/LatencyTrendChart";
 import { useRunData } from "../hooks/useRunData";
 
 function LiveProgressPage() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { currentTestRunId, setCurrentTestRunId } = useTestRunContext();
-  const urlTestRunId = searchParams.get("testRunId");
-  const testRunId = urlTestRunId || currentTestRunId;
+  const { clearActiveTestRun, latestTestRunId, refreshSession } =
+    useTestRunContext();
+  const { testRunId, sessionReady } = useEffectiveTestRunId();
   const [autoScroll, setAutoScroll] = useState(true);
 
   const { testRun, results, logs, isLoading, hasLoaded } = useRunData(
-    testRunId,
+    sessionReady ? testRunId : null,
     true
   );
-
-  useEffect(() => {
-    if (urlTestRunId && urlTestRunId !== currentTestRunId) {
-      setCurrentTestRunId(urlTestRunId);
-    }
-  }, [urlTestRunId, currentTestRunId, setCurrentTestRunId]);
 
   // Auto-scroll to bottom of logs
   const logContainerRef = useRef(null);
@@ -33,22 +27,23 @@ function LiveProgressPage() {
     }
   }, [logs, autoScroll]);
 
+  if (!sessionReady || (isLoading && !testRun)) {
+    return (
+      <div className="live-progress-page">
+        <div className="loading">Loading test progress...</div>
+      </div>
+    );
+  }
+
   if (!testRunId) {
     return (
       <div className="live-progress-page">
         <div className="error-message">
           <h2>No Test Run Selected</h2>
-          <p>Please start a test from the Configuration page.</p>
+          <p>Start a test from Configuration or pick one from History.</p>
           <button onClick={() => navigate("/")}>Go to Configuration</button>
+          <button onClick={() => navigate("/history")}>Browse History</button>
         </div>
-      </div>
-    );
-  }
-
-  if (isLoading && !testRun) {
-    return (
-      <div className="live-progress-page">
-        <div className="loading">Loading test progress...</div>
       </div>
     );
   }
@@ -58,18 +53,21 @@ function LiveProgressPage() {
       <div className="live-progress-page">
         <div className="error-message">
           <h2>Test Run Not Found</h2>
-          <p>
-            This test run ID may be old or expired (especially after restarting
-            the dev server in local in-memory mode).
-          </p>
-          <button
-            onClick={() => {
-              setCurrentTestRunId(null);
-              navigate("/");
-            }}
-          >
-            Start New Test
-          </button>
+          <p>This test may have been removed. Open another run from History.</p>
+          <div className="action-buttons">
+            {latestTestRunId && (
+              <button
+                onClick={() => {
+                  clearActiveTestRun();
+                  refreshSession();
+                  navigate(`/live?testRunId=${latestTestRunId}`);
+                }}
+              >
+                View Latest Test
+              </button>
+            )}
+            <button onClick={() => navigate("/history")}>Browse History</button>
+          </div>
         </div>
       </div>
     );
@@ -209,18 +207,10 @@ function LiveProgressPage() {
         <div className="header-actions">
           <button
             className="action-btn"
-            onClick={() => navigate(`/dashboard?testRunId=${testRunId}`)}
+            onClick={() => navigate(`/results?testRunId=${testRunId}`)}
           >
-            Dashboard
+            Results & Dashboard
           </button>
-          {testRun?.status === "completed" && (
-            <button
-              className="action-btn primary"
-              onClick={() => navigate(`/results?testRunId=${testRunId}`)}
-            >
-              View Results
-            </button>
-          )}
         </div>
       </div>
 

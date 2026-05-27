@@ -5,16 +5,16 @@ import { useTestRunContext } from "../contexts/TestRunContext";
 
 function MainLayout({ children }) {
   const [searchParams] = useSearchParams();
-  const { currentTestRunId, setCurrentTestRunId } = useTestRunContext();
+  const { currentTestRunId, latestTestRunId, setActiveTestRunId } =
+    useTestRunContext();
   const urlTestRunId = searchParams.get("testRunId");
-  const testRunId = urlTestRunId || currentTestRunId;
+  const testRunId = urlTestRunId || currentTestRunId || latestTestRunId;
 
-  // Update context if URL has testRunId
   React.useEffect(() => {
     if (urlTestRunId) {
-      setCurrentTestRunId(urlTestRunId);
+      setActiveTestRunId(urlTestRunId);
     }
-  }, [urlTestRunId, setCurrentTestRunId]);
+  }, [urlTestRunId, setActiveTestRunId]);
 
   const getLinkWithTestRunId = (path) => {
     return testRunId ? `${path}?testRunId=${testRunId}` : path;
@@ -35,10 +35,7 @@ function MainLayout({ children }) {
             <Link to={getLinkWithTestRunId("/live")} className="nav-link">
               Live Progress
             </Link>
-            <Link to={getLinkWithTestRunId("/dashboard")} className="nav-link">
-              Dashboard
-            </Link>
-            <Link to={getLinkWithTestRunId("/results")} className="nav-link">
+            <Link to="/results" className="nav-link">
               Results
             </Link>
           </nav>
