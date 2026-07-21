@@ -2,11 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/api/tests/history": "pages/api/tests/history.js",
+  "/[[...slug]]": "pages/[[...slug]].js",
   "/api/tests/testRun": "pages/api/tests/testRun.js",
-  "/api/tests/startRun": "pages/api/tests/startRun.js",
   "/api/tests/results": "pages/api/tests/results.js",
   "/api/tests/logs": "pages/api/tests/logs.js",
-  "/api/tests/stream": "pages/api/tests/stream.js",
-  "/[[...slug]]": "pages/[[...slug]].js"
+  "/api/tests/startRun": "pages/api/tests/startRun.js",
+  "/api/tests/history": "pages/api/tests/history.js",
+  "/api/tests/stream": "pages/api/tests/stream.js"
 }

@@ -1,31 +1,7 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
 import React from "react";
+import { PROTOCOLS, PROTOCOL_IDS } from "../../imports/shared/metrics";
 
-const AVAILABLE_PROTOCOLS = [
-  {
-    id: "MQTT",
-    name: "MQTT",
-    description: "Message Queuing Telemetry Transport - Ideal for IoT"
-  },
-  {
-    id: "HTTP",
-    name: "HTTP",
-    description: "Hypertext Transfer Protocol - Standard web protocol"
-  },
-  {
-    id: "WebSocket",
-    name: "WebSocket",
-    description: "Full-duplex communication - Real-time web apps"
-  },
-  {
-    id: "CoAP",
-    name: "CoAP",
-    description:
-      "Constrained Application Protocol - Resource-constrained devices"
-  }
-];
-
-function ProtocolSelector({ selectedProtocols, onProtocolsChange }) {
+function ProtocolSelector({ selectedProtocols, onProtocolsChange, error }) {
   const toggleProtocol = (protocolId) => {
     if (selectedProtocols.includes(protocolId)) {
       onProtocolsChange(selectedProtocols.filter((p) => p !== protocolId));
@@ -36,28 +12,45 @@ function ProtocolSelector({ selectedProtocols, onProtocolsChange }) {
 
   return (
     <div className="protocol-selector">
-      <div className="protocol-grid">
-        {AVAILABLE_PROTOCOLS.map((protocol) => (
-          <div
-            key={protocol.id}
-            className={`protocol-card ${
-              selectedProtocols.includes(protocol.id) ? "selected" : ""
-            }`}
-            onClick={() => toggleProtocol(protocol.id)}
-          >
-            <div className="protocol-checkbox">
-              {selectedProtocols.includes(protocol.id) && "✓"}
-            </div>
-            <h3 className="protocol-name">{protocol.name}</h3>
-            <p className="protocol-description">{protocol.description}</p>
-          </div>
-        ))}
+      <div className="protocol-grid" role="group" aria-label="Protocols to compare">
+        {PROTOCOL_IDS.map((id) => {
+          const protocol = PROTOCOLS[id];
+          const checked = selectedProtocols.includes(id);
+          return (
+            <label
+              key={id}
+              className={`select-card protocol-card ${checked ? "selected" : ""}`}
+            >
+              <input
+                type="checkbox"
+                className="visually-hidden"
+                checked={checked}
+                onChange={() => toggleProtocol(id)}
+              />
+              <span className="select-check" aria-hidden="true">
+                {checked && "✓"}
+              </span>
+              <span className="protocol-card-head">
+                <span
+                  className="protocol-dot"
+                  style={{ background: protocol.color }}
+                  aria-hidden="true"
+                />
+                <span className="select-card-title">{protocol.name}</span>
+              </span>
+              <span className="select-card-desc">{protocol.tagline}</span>
+              <span className="protocol-features">
+                {protocol.features.map((f) => (
+                  <span key={f} className="tag">
+                    {f}
+                  </span>
+                ))}
+              </span>
+            </label>
+          );
+        })}
       </div>
-      {selectedProtocols.length === 0 && (
-        <p className="selection-hint">
-          Select at least one protocol to compare
-        </p>
-      )}
+      {error && <p className="field-error">{error}</p>}
     </div>
   );
 }

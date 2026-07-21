@@ -157,7 +157,7 @@ export class WebSocketTester {
     payloadSize,
     durationMs,
     networkSimulator,
-    testRunId
+    _testRunId
   ) {
     const ws = await connectWebSocket(url);
     const latencies = [];

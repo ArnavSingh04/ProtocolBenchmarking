@@ -4,6 +4,7 @@ import {
   getRunLogs,
   getRunResults
 } from "../../../lib/server/runService";
+import { isValidRunId } from "../../../imports/shared/validation";
 
 export const config = {
   api: {
@@ -22,8 +23,8 @@ export default async function handler(req, res) {
   }
 
   const testRunId = req.query.testRunId;
-  if (!testRunId) {
-    return res.status(400).json({ error: "testRunId is required" });
+  if (!isValidRunId(testRunId)) {
+    return res.status(400).json({ error: "A valid testRunId is required" });
   }
 
   res.writeHead(200, {

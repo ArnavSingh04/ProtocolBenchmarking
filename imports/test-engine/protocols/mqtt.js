@@ -290,7 +290,7 @@ export class MQTTTester {
             };
 
             // Receive messages
-            client.on("message", (receivedTopic, message) => {
+            client.on("message", (receivedTopic, _message) => {
               if (receivedTopic === topic) {
                 const receiveTime = Date.now();
                 const msgIndex = Array.from(messageTimes.keys()).find(

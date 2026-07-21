@@ -1172,6 +1172,16 @@ eval("\nObject.defineProperty(exports, \"__esModule\", ({\n    value: true\n}));
 
 /***/ }),
 
+/***/ "(pages-dir-node)/./node_modules/next/document.js":
+/*!***************************************!*\
+  !*** ./node_modules/next/document.js ***!
+  \***************************************/
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+eval("module.exports = __webpack_require__(/*! ./dist/pages/_document */ \"(pages-dir-node)/./node_modules/next/dist/pages/_document.js\")\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHBhZ2VzLWRpci1ub2RlKS8uL25vZGVfbW9kdWxlcy9uZXh0L2RvY3VtZW50LmpzIiwibWFwcGluZ3MiOiJBQUFBLGtJQUFrRCIsInNvdXJjZXMiOlsiQzpcXFVzZXJzXFxQcm9kdWN0aVRlYW1cXERlc2t0b3BcXFByb3RvY29sQmVuY2htYXJraW5nXFxub2RlX21vZHVsZXNcXG5leHRcXGRvY3VtZW50LmpzIl0sInNvdXJjZXNDb250ZW50IjpbIm1vZHVsZS5leHBvcnRzID0gcmVxdWlyZSgnLi9kaXN0L3BhZ2VzL19kb2N1bWVudCcpXG4iXSwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbMF0sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///(pages-dir-node)/./node_modules/next/document.js\n");
+
+/***/ }),
+
 /***/ "(pages-dir-node)/./node_modules/next/dynamic.js":
 /*!**************************************!*\
   !*** ./node_modules/next/dynamic.js ***!

@@ -1,126 +1,82 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
+import {
+  buildProtocolComparison,
+  formatMetricValue
+} from "../../../imports/shared/metrics";
+import { useChartTheme } from "../../hooks/useChartTheme";
+import { legendConfig, tooltipConfig, linearAxis, categoryAxis } from "./chartTheme";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+/**
+ * Latency per scenario, grouped by protocol. Scenarios are discrete conditions
+ * (not points in time), so this is a grouped bar chart — never a line that
+ * fabricates a trend from a single data point.
+ */
 function LatencyTrendChart({ results }) {
-  if (!results || results.length === 0) {
-    return (
-      <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-        No latency data available
-      </div>
-    );
+  const theme = useChartTheme();
+  const comparison = useMemo(() => buildProtocolComparison(results), [results]);
+
+  const active = comparison.protocols.filter((p) => !p.failed);
+  const scenarios = comparison.scenarios;
+
+  if (active.length === 0 || scenarios.length === 0) {
+    return <div className="chart-empty">No latency data yet.</div>;
   }
 
-  // Group results by protocol, ordered by timestamp
-  const protocolData = {};
-  const allTimestamps = [];
-
-  // Sort results by timestamp
-  const sortedResults = [...results].sort(
-    (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
-  );
-
-  sortedResults.forEach((result) => {
-    if (!result.protocol) return;
-
-    if (!protocolData[result.protocol]) {
-      protocolData[result.protocol] = [];
-    }
-
-    const latency = result.metrics?.latency;
-    if (typeof latency === "number" && !isNaN(latency) && latency >= 0) {
-      protocolData[result.protocol].push(latency);
-    } else {
-      protocolData[result.protocol].push(null);
-    }
-  });
-
-  // Create labels based on number of data points
-  const maxDataPoints = Math.max(
-    ...Object.values(protocolData).map((arr) => arr.length),
-    1
-  );
-  const timeLabels = Array.from(
-    { length: maxDataPoints },
-    (_, i) => `Test ${i + 1}`
-  );
-
-  const protocols = Object.keys(protocolData);
-  const colors = ["#667eea", "#764ba2", "#f093fb", "#4facfe"];
-
-  // Ensure all datasets have the same length
-  const datasets = protocols.map((protocol, index) => {
-    const data = protocolData[protocol];
-    // Pad with nulls if needed
-    while (data.length < maxDataPoints) {
-      data.push(null);
-    }
-
-    return {
-      label: protocol,
-      data: data.slice(0, maxDataPoints),
-      borderColor: colors[index % colors.length],
-      backgroundColor: colors[index % colors.length] + "20",
-      tension: 0.4,
-      fill: false,
-      spanGaps: true // Connect across null values
-    };
-  });
-
   const data = {
-    labels: timeLabels,
-    datasets
+    labels: scenarios,
+    datasets: active.map((p) => ({
+      label: p.name,
+      data: scenarios.map((s) => comparison.latencyByScenario[p.name]?.[s] ?? null),
+      backgroundColor: p.color,
+      borderColor: p.color,
+      borderRadius: 4,
+      maxBarThickness: 40
+    }))
   };
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: "top"
-      },
-      title: {
-        display: true,
-        text: "Latency Over Time"
-      }
+      legend: legendConfig(theme),
+      tooltip: tooltipConfig(theme, {
+        callbacks: {
+          label: (ctx) =>
+            `${ctx.dataset.label}: ${formatMetricValue("latency", ctx.parsed.y)}`
+        }
+      })
     },
     scales: {
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: "Latency (ms)"
-        }
-      },
-      x: {
-        title: {
-          display: true,
-          text: "Time"
-        }
-      }
+      y: linearAxis(theme, { title: "Latency (ms) — lower is better" }),
+      x: categoryAxis(theme, {
+        title: scenarios.length === 1 ? undefined : "Scenario"
+      })
     }
   };
 
-  return <Line data={data} options={options} />;
+  return (
+    <div
+      className="chart-canvas"
+      role="img"
+      aria-label={`Bar chart of latency in milliseconds per scenario (lower is better) for ${active
+        .map((p) => p.name)
+        .join(", ")}.`}
+    >
+      <Bar data={data} options={options} />
+    </div>
+  );
 }
 
 export default LatencyTrendChart;

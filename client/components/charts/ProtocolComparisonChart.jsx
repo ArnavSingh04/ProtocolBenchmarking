@@ -1,5 +1,4 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,144 +9,82 @@ import {
   Legend
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import {
+  buildProtocolComparison,
+  METRICS,
+  METRIC_KEYS,
+  formatMetricValue
+} from "../../../imports/shared/metrics";
+import { useChartTheme } from "../../hooks/useChartTheme";
+import { legendConfig, tooltipConfig, linearAxis, categoryAxis } from "./chartTheme";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+/**
+ * Normalised attribute comparison. Every value is on the SAME 0–100 scale
+ * ("higher is better"), so different metrics with incompatible units can be
+ * shown on one axis honestly. Raw values live in the tooltip and the table.
+ */
 function ProtocolComparisonChart({ results }) {
-  if (!results || results.length === 0) {
-    return (
-      <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-        No comparison data available
-      </div>
-    );
+  const theme = useChartTheme();
+  const comparison = useMemo(() => buildProtocolComparison(results), [results]);
+
+  const active = comparison.protocols.filter((p) => !p.failed);
+  if (active.length === 0) {
+    return <div className="chart-empty">No comparable protocol data yet.</div>;
   }
 
-  // Aggregate metrics by protocol
-  const protocolMetrics = {};
-
-  results.forEach((result) => {
-    if (!result.protocol) return;
-
-    if (!protocolMetrics[result.protocol]) {
-      protocolMetrics[result.protocol] = {
-        latency: [],
-        throughput: [],
-        reliability: [],
-        jitter: []
-      };
-    }
-
-    if (result.metrics) {
-      // Only push valid numbers
-      if (
-        typeof result.metrics.latency === "number" &&
-        !isNaN(result.metrics.latency) &&
-        result.metrics.latency >= 0
-      ) {
-        protocolMetrics[result.protocol].latency.push(result.metrics.latency);
-      }
-      if (
-        typeof result.metrics.throughput === "number" &&
-        !isNaN(result.metrics.throughput) &&
-        result.metrics.throughput >= 0
-      ) {
-        protocolMetrics[result.protocol].throughput.push(
-          result.metrics.throughput
-        );
-      }
-      if (
-        typeof result.metrics.reliability === "number" &&
-        !isNaN(result.metrics.reliability) &&
-        result.metrics.reliability >= 0
-      ) {
-        protocolMetrics[result.protocol].reliability.push(
-          result.metrics.reliability
-        );
-      }
-      if (
-        typeof result.metrics.jitter === "number" &&
-        !isNaN(result.metrics.jitter) &&
-        result.metrics.jitter >= 0
-      ) {
-        protocolMetrics[result.protocol].jitter.push(result.metrics.jitter);
-      }
-    }
-  });
-
-  const protocols = Object.keys(protocolMetrics);
-  const labels = [
-    "Latency (ms)",
-    "Throughput (kbps)",
-    "Reliability (%)",
-    "Jitter (ms)"
-  ];
-
-  const datasets = protocols.map((protocol, index) => {
-    const colors = ["#667eea", "#764ba2", "#f093fb", "#4facfe"];
-    const color = colors[index % colors.length];
-
-    const latency =
-      protocolMetrics[protocol].latency.length > 0
-        ? protocolMetrics[protocol].latency.reduce((a, b) => a + b, 0) /
-          protocolMetrics[protocol].latency.length
-        : 0;
-    const throughput =
-      protocolMetrics[protocol].throughput.length > 0
-        ? protocolMetrics[protocol].throughput.reduce((a, b) => a + b, 0) /
-          protocolMetrics[protocol].throughput.length /
-          1000
-        : 0;
-    const reliability =
-      protocolMetrics[protocol].reliability.length > 0
-        ? protocolMetrics[protocol].reliability.reduce((a, b) => a + b, 0) /
-          protocolMetrics[protocol].reliability.length
-        : 0;
-    const jitter =
-      protocolMetrics[protocol].jitter.length > 0
-        ? protocolMetrics[protocol].jitter.reduce((a, b) => a + b, 0) /
-          protocolMetrics[protocol].jitter.length
-        : 0;
-
-    return {
-      label: protocol,
-      data: [latency, throughput, reliability, jitter],
-      backgroundColor: color,
-      borderColor: color,
-      borderWidth: 1
-    };
-  });
+  const labels = METRIC_KEYS.map((k) => METRICS[k].label);
 
   const data = {
     labels,
-    datasets
+    datasets: active.map((p) => ({
+      label: p.name,
+      data: METRIC_KEYS.map((k) => p.normalized[k] ?? 0),
+      backgroundColor: p.color,
+      borderColor: p.color,
+      borderWidth: 0,
+      borderRadius: 4,
+      maxBarThickness: 26,
+      // stash raw values for the tooltip
+      _raw: METRIC_KEYS.map((k) => p.metrics[k])
+    }))
   };
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: {
-        position: "top"
-      },
-      title: {
-        display: true,
-        text: "Protocol Performance Comparison"
-      }
+      legend: legendConfig(theme),
+      tooltip: tooltipConfig(theme, {
+        callbacks: {
+          label: (ctx) => {
+            const key = METRIC_KEYS[ctx.dataIndex];
+            const raw = ctx.dataset._raw?.[ctx.dataIndex];
+            const rawText = formatMetricValue(key, raw);
+            return `${ctx.dataset.label}: ${ctx.parsed.y}/100  (${rawText})`;
+          }
+        }
+      })
     },
     scales: {
-      y: {
-        beginAtZero: true
-      }
+      y: linearAxis(theme, { title: "Normalised score (higher is better)", max: 100 }),
+      x: categoryAxis(theme)
     }
   };
 
-  return <Bar data={data} options={options} />;
+  return (
+    <div
+      className="chart-canvas"
+      role="img"
+      aria-label={`Grouped bar chart of normalised attribute scores (0–100, higher is better) for ${active
+        .map((p) => p.name)
+        .join(", ")}. Exact values are in the metrics table.`}
+    >
+      <Bar data={data} options={options} />
+    </div>
+  );
 }
 
 export default ProtocolComparisonChart;

@@ -1,118 +1,55 @@
 # Configuration Guide
 
-## Quick Start - UI Configuration (Recommended)
+## Run modes
 
-The easiest way to configure all protocol endpoints is through the UI:
+ProtocolBench has two run modes, chosen on the Configuration page:
 
-1. Go to the Configuration page
-2. Scroll to "4. Protocol Configuration (Optional)"
-3. Configure endpoints for the protocols you're testing:
-   - **MQTT Broker URL** (e.g., `mqtt://192.168.0.17:1883`)
-   - **HTTP Endpoint** (e.g., `https://webhook.site/your-id`)
-   - **WebSocket URL** (e.g., `wss://websocket-echo.com/` or `wss://echo.websocket.org`)
-   - **CoAP Server URL** (e.g., `coap://localhost:5683`)
-4. Settings are automatically saved to localStorage and will be remembered for future tests
+- **Simulation (default):** a deterministic, offline model. No network calls are
+  made and endpoint settings are ignored. Reproducible — the same configuration
+  always yields the same result. Best for demos, comparisons and CI.
+- **Live:** the app connects to the endpoints below and exchanges real messages.
+  Results depend on network conditions and endpoint availability.
 
-**No hardcoded IPs needed!** You can change any endpoint anytime from the UI.
+Only switch to Live mode when you want to benchmark real servers.
 
-## MQTT Broker Configuration
+## Endpoints (Live mode only)
 
-The MQTT tester can use a custom broker URL. You can configure it in three ways (priority order):
+Configure these on the Configuration page (saved to `localStorage`) or via
+environment variables. Priority: **UI value → environment variable → default**.
 
-### Option 1: UI Configuration (Easiest) ⭐
-Configure directly in the Configuration page before starting a test. Settings are saved to localStorage and persist across sessions.
+| Protocol | UI field | Env var | Default |
+|----------|----------|---------|---------|
+| MQTT | MQTT Broker URL | `MQTT_BROKER_URL` | `mqtt://broker.emqx.io:1883` |
+| HTTP | HTTP Endpoint | `HTTP_TEST_URL` | `https://httpbin.org/post` |
+| WebSocket | WebSocket URL | `WEBSOCKET_URL` | public echo servers |
+| CoAP | CoAP Server URL | `COAP_SERVER_URL` | `coap://coap.me` |
 
-### Option 2: Environment Variable
-Set the environment variable before starting Meteor:
-```bash
-export MQTT_BROKER_URL="mqtt://your-broker-ip:1883"
-meteor run
-```
+> **CoAP is always modelled**, even in Live mode — the `coap` library is not
+> wired to a live server in this build. The other three protocols perform real
+> network I/O in Live mode.
 
-### Option 3: Default
-If not configured, it will use `mqtt://localhost:1883`
+## Persistence
 
-## HTTP Endpoint Configuration
+- No `MONGO_URL` → runs are stored in an in-memory + local JSON fallback
+  (`.local-data/`). Zero setup, single instance.
+- `MONGO_URL` set → runs are stored in MongoDB (`MONGO_DB_NAME` or inferred).
 
-Similarly, you can configure a custom HTTP endpoint:
+See `.env.example` for all variables. Never commit real credentials.
 
-```bash
-export HTTP_TEST_URL="http://localhost:8080/echo"
-meteor run
-```
+## Trying a local MQTT broker (Live mode)
 
-Or in configuration:
-```javascript
-protocolConfig: {
-  httpEndpoint: "http://your-server/endpoint"
-}
-```
-
-## WebSocket Server Configuration
-
-Configure a custom WebSocket server URL:
-
-**Via UI (Recommended):** Enter the WebSocket URL in the Configuration page (e.g., `ws://localhost:8080` or `wss://your-server.com`)
-
-**Via Environment Variable:**
-```bash
-export WEBSOCKET_URL="ws://localhost:8080"
-meteor run
-```
-
-**Via Configuration:**
-```javascript
-protocolConfig: {
-  websocketUrl: "ws://your-websocket-server:8080"
-}
-```
-
-Default: `wss://websocket-echo.com/` (with fallbacks to `wss://echo.websocket.org` and `wss://ws.ifelse.io`)
-
-## CoAP Server Configuration
-
-Configure a custom CoAP server URL:
-
-**Via UI (Recommended):** Enter the CoAP server URL in the Configuration page (e.g., `coap://localhost:5683`)
-
-**Via Environment Variable:**
-```bash
-export COAP_SERVER_URL="coap://localhost:5683"
-meteor run
-```
-
-**Via Configuration:**
-```javascript
-protocolConfig: {
-  coapServerUrl: "coap://your-coap-server:5683"
-}
-```
-
-Default: `coap://localhost:5683`
-
-**Note:** The current CoAP implementation uses simulation. For real CoAP server testing, you'll need a CoAP server running and may need to adjust the implementation.
-
-## Testing Your Broker
-
-To test if your MQTT broker is working, you can use the default Mosquitto test broker first, then switch to your own.
-
-For a quick test MQTT broker, you can run:
 ```bash
 docker run -it -p 1883:1883 eclipse-mosquitto
+# then set the MQTT Broker URL to mqtt://localhost:1883
 ```
 
-Then use: `mqtt://localhost:1883`
+## Troubleshooting Live mode
 
-## Troubleshooting
+Open the Live Progress page and filter the execution log to **Errors** to see
+connection failures. Common causes when metrics come back as a failure:
 
-Check the detailed execution log in the Live Progress page to see:
-- Connection errors
-- Message send/receive counts
-- Any network or authentication issues
-
-If metrics are still zero, check:
-1. Network connectivity to broker/endpoint
-2. Firewall rules
+1. Endpoint unreachable / wrong URL scheme (mqtt://, ws(s)://, http(s)://)
+2. Firewall or port blocking (1883 for MQTT, 443/80 for HTTP)
 3. Broker authentication requirements
-4. Port accessibility (1883 for MQTT, 443/80 for HTTP)
-
+4. Public endpoint rate limits or downtime — prefer Simulation mode for
+   reliable, repeatable results.

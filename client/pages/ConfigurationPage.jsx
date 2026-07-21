@@ -1,102 +1,59 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTestRunContext } from "../contexts/TestRunContext";
 import AttributeSelector from "../components/AttributeSelector";
 import ProtocolSelector from "../components/ProtocolSelector";
 import ScenarioSelector from "../components/ScenarioSelector";
 import { startRun } from "../lib/api";
+import { QUALITY_ATTRIBUTES, SCENARIOS } from "../../imports/shared/metrics";
+import { validateConfiguration } from "../../imports/shared/validation";
 
-const QUALITY_ATTRIBUTES = [
+const ENDPOINT_FIELDS = [
   {
-    name: "latency",
-    label: "Latency",
-    description: "Time delay in message transmission"
+    key: "mqttBrokerUrl",
+    protocol: "MQTT",
+    label: "MQTT Broker URL",
+    placeholder: "mqtt://broker.emqx.io:1883",
+    hint: "Public brokers: broker.emqx.io, broker.hivemq.com"
   },
   {
-    name: "reliability",
-    label: "Reliability",
-    description: "Message delivery success rate"
+    key: "httpEndpoint",
+    protocol: "HTTP",
+    label: "HTTP Endpoint",
+    placeholder: "https://httpbin.org/post",
+    hint: "Any endpoint that accepts a POST body"
   },
   {
-    name: "throughput",
-    label: "Throughput",
-    description: "Data transfer rate"
-  },
-  { name: "jitter", label: "Jitter", description: "Variation in latency" },
-  {
-    name: "ordering",
-    label: "Ordering",
-    description: "Message sequence preservation"
+    key: "websocketUrl",
+    protocol: "WebSocket",
+    label: "WebSocket URL",
+    placeholder: "wss://echo.websocket.org",
+    hint: "An echo server works well for benchmarking"
   },
   {
-    name: "dataIntegrity",
-    label: "Data Integrity",
-    description: "Data accuracy and consistency"
-  },
-  {
-    name: "resourceUsage",
-    label: "Resource Usage",
-    description: "CPU and memory consumption"
-  },
-  {
-    name: "securityOverhead",
-    label: "Security Overhead",
-    description: "Encryption/authentication cost"
+    key: "coapServerUrl",
+    protocol: "CoAP",
+    label: "CoAP Server URL",
+    placeholder: "coap://coap.me",
+    hint: "CoAP is always modelled (see limitations)"
   }
 ];
 
-const AVAILABLE_SCENARIOS = [
-  {
-    name: "Stable Network",
-    description: "Ideal conditions with consistent connectivity",
-    latency: 10,
-    packetLoss: 0,
-    jitter: 2,
-    unstable: false
-  },
-  {
-    name: "Unstable Network",
-    description: "Poor connectivity with frequent interruptions",
-    latency: 100,
-    packetLoss: 5,
-    jitter: 50,
-    unstable: true
-  },
-  {
-    name: "High Frequency",
-    description: "High message frequency (1000+ messages/sec)",
-    messageFrequency: 1000,
-    duration: 10000,
-    latency: 20
-  },
-  {
-    name: "Long Duration",
-    description: "Extended session with sustained load",
-    duration: 60000,
-    messageFrequency: 10,
-    latency: 15
-  },
-  {
-    name: "Encrypted Connection",
-    description: "TLS/DTLS enabled with security overhead",
-    latency: 30,
-    encrypted: true,
-    securityOverhead: 15
-  },
-  {
-    name: "Concurrent Load",
-    description: "Multiple simultaneous client connections",
-    concurrentClients: 10,
-    latency: 25,
-    packetLoss: 1
+function loadStored(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value == null ? fallback : value;
+  } catch {
+    return fallback;
   }
-];
+}
 
 function ConfigurationPage() {
   const navigate = useNavigate();
   const { setActiveTestRunId, refreshSession } = useTestRunContext();
-  const [attributes, setAttributes] = useState(
+  const startingRef = useRef(false);
+
+  const [attributes, setAttributes] = useState(() =>
     QUALITY_ATTRIBUTES.map((attr) => ({ ...attr, weight: 12.5 }))
   );
   const [selectedProtocols, setSelectedProtocols] = useState([
@@ -104,246 +61,312 @@ function ConfigurationPage() {
     "HTTP",
     "WebSocket"
   ]);
-  const [selectedScenarios, setSelectedScenarios] = useState([
-    AVAILABLE_SCENARIOS[0]
-  ]);
+  const [selectedScenarios, setSelectedScenarios] = useState([SCENARIOS[0]]);
   const [testName, setTestName] = useState("");
+  const [mode, setMode] = useState(() =>
+    loadStored("benchmarkMode", "simulation") === "live" ? "live" : "simulation"
+  );
+  const [endpoints, setEndpoints] = useState(() => ({
+    mqttBrokerUrl: loadStored("mqttBrokerUrl", "mqtt://broker.emqx.io:1883"),
+    httpEndpoint: loadStored("httpEndpoint", "https://httpbin.org/post"),
+    websocketUrl: loadStored("websocketUrl", "wss://echo.websocket.org"),
+    coapServerUrl: loadStored("coapServerUrl", "coap://coap.me")
+  }));
+
   const [isRunning, setIsRunning] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  // Load saved protocol config from localStorage
-  const [mqttBrokerUrl, setMqttBrokerUrl] = useState(() => {
-    const stored = localStorage.getItem("mqttBrokerUrl");
-    if (
-      !stored ||
-      stored.includes("test.mosquitto.org") ||
-      stored === "mqtt://test.mosquitto.org:1883"
-    ) {
-      return "mqtt://broker.emqx.io:1883";
-    }
-    return stored;
-  });
-  const [httpEndpoint, setHttpEndpoint] = useState(() => {
-    return localStorage.getItem("httpEndpoint") || "https://httpbin.org/post";
-  });
-  const [websocketUrl, setWebsocketUrl] = useState(() => {
-    const stored = localStorage.getItem("websocketUrl");
-    if (!stored) {
-      return "wss://websocket-echo.com/";
-    }
-    // Fix broken hostname that does not resolve on most networks.
-    if (stored.includes("echo.websocket.events")) {
-      return "wss://websocket-echo.com/";
-    }
-    return stored;
-  });
-  const [coapServerUrl, setCoapServerUrl] = useState(() => {
-    return localStorage.getItem("coapServerUrl") || "coap://coap.me";
-  });
-
-  useEffect(() => {
-    const stored = localStorage.getItem("websocketUrl");
-    if (stored?.includes("echo.websocket.events")) {
-      const fixed = "wss://websocket-echo.com/";
-      localStorage.setItem("websocketUrl", fixed);
-      setWebsocketUrl(fixed);
-    }
-  }, []);
-
-  const handleAttributeWeightChange = (name, weight) => {
-    setAttributes((attrs) =>
-      attrs.map((attr) => (attr.name === name ? { ...attr, weight } : attr))
-    );
-  };
-
-  const handleStartTest = () => {
-    if (selectedProtocols.length === 0) {
-      alert("Please select at least one protocol");
-      return;
-    }
-
-    if (selectedScenarios.length === 0) {
-      alert("Please select at least one scenario");
-      return;
-    }
-
-    setIsRunning(true);
-
-    // Save protocol config to localStorage
-    localStorage.setItem("mqttBrokerUrl", mqttBrokerUrl);
-    localStorage.setItem("httpEndpoint", httpEndpoint);
-    localStorage.setItem("websocketUrl", websocketUrl);
-    localStorage.setItem("coapServerUrl", coapServerUrl);
-
-    const configuration = {
-      testName: testName || `Test ${Date.now()}`,
+  const configuration = useMemo(
+    () => ({
+      testName,
       attributes,
       selectedProtocols,
       scenarios: selectedScenarios,
+      mode,
       messageSize: 1024,
       messageFrequency: 100,
-      protocolConfig: {
-        mqttBrokerUrl: mqttBrokerUrl.trim() || undefined,
-        httpEndpoint: httpEndpoint.trim() || undefined,
-        websocketUrl: websocketUrl.trim() || undefined,
-        coapServerUrl: coapServerUrl.trim() || undefined
-      }
-    };
+      protocolConfig: mode === "live" ? endpoints : {}
+    }),
+    [testName, attributes, selectedProtocols, selectedScenarios, mode, endpoints]
+  );
+
+  const { valid, errors } = useMemo(
+    () => validateConfiguration(configuration),
+    [configuration]
+  );
+
+  const totalTests = selectedProtocols.length * selectedScenarios.length;
+
+  const setEndpoint = (key, value) =>
+    setEndpoints((prev) => ({ ...prev, [key]: value }));
+
+  const handleStartTest = () => {
+    if (!valid || startingRef.current) return;
+    startingRef.current = true;
+    setIsRunning(true);
+    setSubmitError(null);
+
+    try {
+      localStorage.setItem("benchmarkMode", mode);
+      Object.entries(endpoints).forEach(([k, v]) => localStorage.setItem(k, v));
+    } catch {
+      /* ignore storage errors */
+    }
 
     startRun(configuration)
       .then((testRunId) => {
-        setIsRunning(false);
-        console.log("Test run started with ID:", testRunId);
         setActiveTestRunId(testRunId);
         refreshSession();
         navigate(`/live?testRunId=${testRunId}`);
       })
       .catch((error) => {
         setIsRunning(false);
-        alert(`Error starting test: ${error.message}`);
-        console.error("Error starting test:", error);
+        startingRef.current = false;
+        setSubmitError(error.message || "Could not start the benchmark.");
       });
   };
 
+  const blockingReasons = [
+    errors.protocols,
+    errors.scenarios,
+    errors.weights,
+    errors.attributes,
+    errors.testName,
+    errors.mqttBrokerUrl,
+    errors.httpEndpoint,
+    errors.websocketUrl,
+    errors.coapServerUrl
+  ].filter(Boolean);
+
   return (
     <div className="configuration-page">
-      <div className="container">
-        <h1 className="page-title">Configure Protocol Comparison Test</h1>
+      <div className="container config-layout">
+        <div className="config-main">
+          <header className="page-head">
+            <h1 className="page-title">Configure a benchmark</h1>
+            <p className="section-description">
+              Weight the quality attributes that matter to you, pick the
+              protocols and network scenarios, then run the comparison.
+            </p>
+          </header>
 
-        <div className="config-section">
-          <label className="section-label">
-            Test Name (Optional)
-            <input
-              type="text"
-              value={testName}
-              onChange={(e) => setTestName(e.target.value)}
-              placeholder="Enter test name"
-              className="test-name-input"
+          {/* Mode */}
+          <section className="config-section">
+            <div className="section-head">
+              <h2 className="section-title">Run mode</h2>
+            </div>
+            <div className="mode-row">
+              <div
+                className="segmented"
+                role="group"
+                aria-label="Benchmark run mode"
+              >
+                <button
+                  type="button"
+                  aria-pressed={mode === "simulation"}
+                  onClick={() => setMode("simulation")}
+                >
+                  Simulation
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={mode === "live"}
+                  onClick={() => setMode("live")}
+                >
+                  Live
+                </button>
+              </div>
+              <p className="section-description mode-note">
+                {mode === "simulation"
+                  ? "Deterministic model — no network calls. Reproducible and ideal for demos."
+                  : "Contacts the endpoints below. Results depend on network conditions and endpoint availability."}
+              </p>
+            </div>
+          </section>
+
+          {/* Test name */}
+          <section className="config-section">
+            <div className="field">
+              <label className="field-label" htmlFor="test-name">
+                Test name <span className="muted">(optional)</span>
+              </label>
+              <input
+                id="test-name"
+                type="text"
+                className={`input ${errors.testName ? "input-error" : ""}`}
+                value={testName}
+                maxLength={140}
+                onChange={(e) => setTestName(e.target.value)}
+                placeholder="e.g. IoT telemetry — low latency priority"
+              />
+              {errors.testName ? (
+                <span className="field-error">{errors.testName}</span>
+              ) : (
+                <span className="field-hint">
+                  Leave blank to auto-name with a timestamp.
+                </span>
+              )}
+            </div>
+          </section>
+
+          {/* Attributes */}
+          <section className="config-section">
+            <div className="section-head">
+              <h2 className="section-title">1. Quality attributes &amp; weights</h2>
+            </div>
+            <div className="alert alert-info section-explainer">
+              <span className="alert-icon" aria-hidden="true">
+                ⓘ
+              </span>
+              <span>
+                Each protocol's measured metrics are normalised across the
+                comparison, then multiplied by these weights to produce a fitness
+                score out of 100. Heavier weights make an attribute matter more.
+                Order sets priority for readability; weights drive the score.
+              </span>
+            </div>
+            <AttributeSelector attributes={attributes} onChange={setAttributes} />
+          </section>
+
+          {/* Protocols */}
+          <section className="config-section">
+            <div className="section-head">
+              <h2 className="section-title">2. Protocols</h2>
+              <span className="muted">{selectedProtocols.length} selected</span>
+            </div>
+            <ProtocolSelector
+              selectedProtocols={selectedProtocols}
+              onProtocolsChange={setSelectedProtocols}
+              error={errors.protocols}
             />
-          </label>
+          </section>
+
+          {/* Scenarios */}
+          <section className="config-section">
+            <div className="section-head">
+              <h2 className="section-title">3. Test scenarios</h2>
+              <span className="muted">{selectedScenarios.length} selected</span>
+            </div>
+            <ScenarioSelector
+              availableScenarios={SCENARIOS}
+              selectedScenarios={selectedScenarios}
+              onScenariosChange={setSelectedScenarios}
+              error={errors.scenarios}
+            />
+          </section>
+
+          {/* Endpoints */}
+          <section className="config-section">
+            <div className="section-head">
+              <h2 className="section-title">4. Protocol endpoints</h2>
+              <span className="muted">
+                {mode === "live" ? "used in live mode" : "ignored in simulation"}
+              </span>
+            </div>
+            {mode === "simulation" && (
+              <div className="alert alert-info section-explainer">
+                <span className="alert-icon" aria-hidden="true">
+                  ⓘ
+                </span>
+                <span>
+                  Simulation mode does not contact these endpoints. Switch to
+                  Live mode to benchmark real servers.
+                </span>
+              </div>
+            )}
+            <div className="endpoint-grid">
+              {ENDPOINT_FIELDS.map((f) => (
+                <div className="field" key={f.key}>
+                  <label className="field-label" htmlFor={f.key}>
+                    {f.label}
+                  </label>
+                  <input
+                    id={f.key}
+                    type="text"
+                    className={`input ${errors[f.key] ? "input-error" : ""}`}
+                    value={endpoints[f.key]}
+                    onChange={(e) => setEndpoint(f.key, e.target.value)}
+                    placeholder={f.placeholder}
+                    disabled={mode !== "live"}
+                    aria-describedby={`${f.key}-hint`}
+                  />
+                  {errors[f.key] ? (
+                    <span className="field-error">{errors[f.key]}</span>
+                  ) : (
+                    <span className="field-hint" id={`${f.key}-hint`}>
+                      {f.hint}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
 
-        <div className="config-section">
-          <h2 className="section-title">
-            1. Select Quality Attributes & Weights
-          </h2>
-          <p className="section-description">
-            Drag to reorder and adjust sliders to set importance weights (must
-            total 100%)
-          </p>
-          <AttributeSelector
-            attributes={attributes}
-            onWeightChange={handleAttributeWeightChange}
-          />
-        </div>
+        {/* Sticky summary / action */}
+        <aside className="config-summary" aria-label="Run summary">
+          <div className="card card-pad summary-card">
+            <h2 className="summary-title">Run summary</h2>
+            <dl className="summary-list">
+              <div className="summary-row">
+                <dt>Mode</dt>
+                <dd>
+                  <span className={`badge ${mode === "live" ? "badge-warning" : "badge-primary"}`}>
+                    {mode === "live" ? "Live" : "Simulated"}
+                  </span>
+                </dd>
+              </div>
+              <div className="summary-row">
+                <dt>Protocols</dt>
+                <dd>{selectedProtocols.join(", ") || "—"}</dd>
+              </div>
+              <div className="summary-row">
+                <dt>Scenarios</dt>
+                <dd>{selectedScenarios.length || "—"}</dd>
+              </div>
+              <div className="summary-row">
+                <dt>Benchmarks</dt>
+                <dd>{totalTests}</dd>
+              </div>
+            </dl>
 
-        <div className="config-section">
-          <h2 className="section-title">2. Select Protocols</h2>
-          <ProtocolSelector
-            selectedProtocols={selectedProtocols}
-            onProtocolsChange={setSelectedProtocols}
-          />
-        </div>
+            {submitError && (
+              <div className="alert alert-danger" role="alert">
+                <span className="alert-icon" aria-hidden="true">
+                  ⚠
+                </span>
+                <span>{submitError}</span>
+              </div>
+            )}
 
-        <div className="config-section">
-          <h2 className="section-title">3. Select Test Scenarios</h2>
-          <ScenarioSelector
-            availableScenarios={AVAILABLE_SCENARIOS}
-            selectedScenarios={selectedScenarios}
-            onScenariosChange={setSelectedScenarios}
-          />
-        </div>
+            {!valid && blockingReasons.length > 0 && (
+              <div className="summary-blockers" role="status">
+                <p className="summary-blockers-title">Before you can start:</p>
+                <ul>
+                  {blockingReasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        <div className="config-section">
-          <h2 className="section-title">
-            4. Protocol Configuration (Optional)
-          </h2>
-          <p className="section-description">
-            Configure protocol endpoints. Leave empty to use defaults or
-            environment variables.
-          </p>
-          <div className="protocol-config">
-            <div className="config-field">
-              <label htmlFor="mqtt-broker">
-                MQTT Broker URL
-                <span className="field-hint">
-                  (e.g., mqtt://broker.emqx.io:1883 or mqtt://broker.hivemq.com:1883)
-                </span>
-              </label>
-              <input
-                id="mqtt-broker"
-                type="text"
-                value={mqttBrokerUrl}
-                onChange={(e) => setMqttBrokerUrl(e.target.value)}
-                placeholder="mqtt://broker.emqx.io:1883"
-                className="protocol-input"
-              />
-            </div>
-            <div className="config-field">
-              <label htmlFor="http-endpoint">
-                HTTP Test Endpoint
-                <span className="field-hint">
-                  (e.g., https://httpbin.org/post or https://postman-echo.com/post)
-                </span>
-              </label>
-              <input
-                id="http-endpoint"
-                type="text"
-                value={httpEndpoint}
-                onChange={(e) => setHttpEndpoint(e.target.value)}
-                placeholder="https://httpbin.org/post"
-                className="protocol-input"
-              />
-            </div>
-            <div className="config-field">
-              <label htmlFor="websocket-url">
-                WebSocket Server URL
-                <span className="field-hint">
-                  (e.g., wss://websocket-echo.com/ or wss://echo.websocket.org)
-                </span>
-              </label>
-              <input
-                id="websocket-url"
-                type="text"
-                value={websocketUrl}
-                onChange={(e) => setWebsocketUrl(e.target.value)}
-                placeholder="wss://websocket-echo.com/"
-                className="protocol-input"
-              />
-            </div>
-            <div className="config-field">
-              <label htmlFor="coap-server-url">
-                CoAP Server URL
-                <span className="field-hint">
-                  (e.g., coap://coap.me or coap://localhost:5683)
-                </span>
-              </label>
-              <input
-                id="coap-server-url"
-                type="text"
-                value={coapServerUrl}
-                onChange={(e) => setCoapServerUrl(e.target.value)}
-                placeholder="coap://coap.me"
-                className="protocol-input"
-              />
-            </div>
-            <p className="config-note">
-              💡 Settings are saved automatically and will be remembered for
-              future tests. You can also use environment variables:{" "}
-              <code>MQTT_BROKER_URL</code>, <code>HTTP_TEST_URL</code>,
-              <code>WEBSOCKET_URL</code>, and <code>COAP_SERVER_URL</code>.
+            <button
+              type="button"
+              className="btn btn-primary btn-lg btn-block"
+              onClick={handleStartTest}
+              disabled={!valid || isRunning}
+            >
+              {isRunning ? "Starting…" : "Start benchmark"}
+            </button>
+            <p className="summary-foot section-description">
+              {totalTests > 0
+                ? `Runs ${totalTests} benchmark${totalTests > 1 ? "s" : ""} (${
+                    selectedProtocols.length
+                  } × ${selectedScenarios.length}).`
+                : "Select at least one protocol and scenario."}
             </p>
           </div>
-        </div>
-
-        <div className="config-section">
-          <button
-            className="start-test-btn"
-            onClick={handleStartTest}
-            disabled={isRunning}
-          >
-            {isRunning ? "Running Tests..." : "Start Benchmark Tests"}
-          </button>
-        </div>
+        </aside>
       </div>
     </div>
   );

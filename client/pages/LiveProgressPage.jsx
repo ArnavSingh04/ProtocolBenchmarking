@@ -1,48 +1,149 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTestRunContext } from "../contexts/TestRunContext";
 import { useEffectiveTestRunId } from "../hooks/useEffectiveTestRunId";
+import { useRunData } from "../hooks/useRunData";
 import ProtocolComparisonChart from "../components/charts/ProtocolComparisonChart";
 import LatencyTrendChart from "../components/charts/LatencyTrendChart";
-import { useRunData } from "../hooks/useRunData";
+import {
+  isResultFailed,
+  protocolColor,
+  formatMetricValue
+} from "../../imports/shared/metrics";
+import { logType, LOG_FILTERS } from "../lib/logTypes";
+
+function protocolStatus(protocol, { resultsByProtocol, scenarioCount, testRun }) {
+  const list = resultsByProtocol[protocol] || [];
+  const done = list.length;
+  const runStatus = testRun?.status;
+  const isCurrent = testRun?.progress?.currentProtocol === protocol;
+  const failedAll = done > 0 && list.every((r) => isResultFailed(r.metrics));
+
+  if (runStatus === "running") {
+    if (isCurrent) return "running";
+    if (done >= scenarioCount && scenarioCount > 0)
+      return failedAll ? "failed" : "completed";
+    if (done > 0) return "running";
+    return "pending";
+  }
+  // Run finished
+  if (done === 0) return "failed";
+  return failedAll ? "failed" : "completed";
+}
+
+const STATUS_LABEL = {
+  pending: "Pending",
+  running: "Running",
+  completed: "Completed",
+  failed: "Failed"
+};
 
 function LiveProgressPage() {
   const navigate = useNavigate();
   const { clearActiveTestRun, latestTestRunId, refreshSession } =
     useTestRunContext();
   const { testRunId, sessionReady } = useEffectiveTestRunId();
-  const [autoScroll, setAutoScroll] = useState(true);
-
   const { testRun, results, logs, isLoading, hasLoaded } = useRunData(
     sessionReady ? testRunId : null,
     true
   );
 
-  // Auto-scroll to bottom of logs
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [filter, setFilter] = useState("all");
   const logContainerRef = useRef(null);
-  useEffect(() => {
-    if (autoScroll && logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-    }
-  }, [logs, autoScroll]);
 
+  const isRunning = testRun?.status === "running";
+  const protocols = testRun?.protocols || [];
+  const scenarios = testRun?.scenarios || [];
+  const scenarioCount = scenarios.length;
+  const mode = testRun?.mode || testRun?.configuration?.mode || "simulation";
+
+  const resultsByProtocol = useMemo(() => {
+    const map = {};
+    results.forEach((r) => {
+      if (!map[r.protocol]) map[r.protocol] = [];
+      map[r.protocol].push(r);
+    });
+    return map;
+  }, [results]);
+
+  const logsByProtocol = useMemo(() => {
+    const map = {};
+    logs.forEach((log) => {
+      if (log.protocol) {
+        if (!map[log.protocol]) map[log.protocol] = [];
+        map[log.protocol].push(log);
+      }
+    });
+    return map;
+  }, [logs]);
+
+  const activeFilter = LOG_FILTERS.find((f) => f.id === filter) || LOG_FILTERS[0];
+  const filteredLogs = activeFilter.types
+    ? logs.filter((l) => activeFilter.types.includes(l.type))
+    : logs;
+
+  const completed = testRun?.progress?.completed || 0;
+  const total = testRun?.progress?.total || protocols.length * scenarioCount || 0;
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  // Auto-scroll to newest logs unless the user has scrolled up to inspect.
+  useEffect(() => {
+    const el = logContainerRef.current;
+    if (autoScroll && el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [filteredLogs.length, autoScroll]);
+
+  const handleLogScroll = () => {
+    const el = logContainerRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    // Pause auto-scroll when the user scrolls up; resume when back near bottom.
+    setAutoScroll(nearBottom);
+  };
+
+  // Screen-reader announcement for progress / completion.
+  const announcement = useMemo(() => {
+    if (!testRun) return "";
+    if (isRunning) {
+      const current = testRun.progress?.currentProtocol;
+      return `Benchmark running. ${completed} of ${total} complete.${
+        current ? ` Currently testing ${current}.` : ""
+      }`;
+    }
+    if (testRun.status === "completed") return "Benchmark complete. Results are ready.";
+    if (testRun.status === "failed") return "Benchmark failed.";
+    return "";
+  }, [testRun, isRunning, completed, total]);
+
+  // ---- states ----
   if (!sessionReady || (isLoading && !testRun)) {
     return (
-      <div className="live-progress-page">
-        <div className="loading">Loading test progress...</div>
+      <div className="container live-page">
+        <div className="loading">
+          <div className="spinner" />
+          <p>Loading test progress…</p>
+        </div>
       </div>
     );
   }
 
   if (!testRunId) {
     return (
-      <div className="live-progress-page">
-        <div className="error-message">
-          <h2>No Test Run Selected</h2>
-          <p>Start a test from Configuration or pick one from History.</p>
-          <button onClick={() => navigate("/")}>Go to Configuration</button>
-          <button onClick={() => navigate("/history")}>Browse History</button>
+      <div className="container live-page">
+        <div className="empty-state">
+          <div className="empty-icon" aria-hidden="true">📡</div>
+          <h2>No test selected</h2>
+          <p>Start a benchmark from configuration, or pick one from history.</p>
+          <div className="state-actions">
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
+              Configure a benchmark
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate("/history")}>
+              Browse history
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -50,307 +151,181 @@ function LiveProgressPage() {
 
   if (!isLoading && hasLoaded && !testRun) {
     return (
-      <div className="live-progress-page">
-        <div className="error-message">
-          <h2>Test Run Not Found</h2>
-          <p>This test may have been removed. Open another run from History.</p>
-          <div className="action-buttons">
+      <div className="container live-page">
+        <div className="error-state">
+          <div className="empty-icon" aria-hidden="true">🔍</div>
+          <h2>Test run not found</h2>
+          <p>This run may have been removed.</p>
+          <div className="state-actions">
             {latestTestRunId && (
               <button
+                className="btn btn-secondary"
                 onClick={() => {
                   clearActiveTestRun();
                   refreshSession();
                   navigate(`/live?testRunId=${latestTestRunId}`);
                 }}
               >
-                View Latest Test
+                View latest
               </button>
             )}
-            <button onClick={() => navigate("/history")}>Browse History</button>
+            <button className="btn btn-secondary" onClick={() => navigate("/history")}>
+              Browse history
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  const isRunning = testRun?.status === "running";
-  const protocols = testRun?.protocols || [];
-  const scenarios = testRun?.scenarios || [];
-
-  // Group logs by protocol
-  const logsByProtocol = {};
-  logs.forEach((log) => {
-    if (log.protocol) {
-      if (!logsByProtocol[log.protocol]) {
-        logsByProtocol[log.protocol] = [];
-      }
-      logsByProtocol[log.protocol].push(log);
-    }
-  });
-
-  // Group results by protocol
-  const resultsByProtocol = {};
-  results.forEach((result) => {
-    if (!resultsByProtocol[result.protocol]) {
-      resultsByProtocol[result.protocol] = [];
-    }
-    resultsByProtocol[result.protocol].push(result);
-  });
-
-  // Calculate current metrics
-  const getCurrentMetrics = (protocol) => {
-    const protocolResults = resultsByProtocol[protocol] || [];
-    if (protocolResults.length === 0) return null;
-
-    const allMetrics = protocolResults
-      .map((r) => r.metrics || {})
-      .filter((m) => Object.keys(m).length > 0);
-    if (allMetrics.length === 0) return null;
-
-    // Calculate averages - include zeros if they exist, but prefer non-zero values
-    const latencyValues = allMetrics
-      .map((m) => m.latency || 0)
-      .filter((v) => !isNaN(v) && isFinite(v));
-    const reliabilityValues = allMetrics
-      .map((m) => m.reliability || 0)
-      .filter((v) => !isNaN(v) && isFinite(v));
-    const throughputValues = allMetrics
-      .map((m) => m.throughput || 0)
-      .filter((v) => !isNaN(v) && isFinite(v));
-
-    // Use the latest result's metrics if available, or average
-    const latestMetrics = allMetrics[allMetrics.length - 1];
-
-    return {
-      latency:
-        latestMetrics?.latency ??
-        (latencyValues.length > 0
-          ? latencyValues.reduce((a, b) => a + b, 0) / latencyValues.length
-          : 0),
-      jitter: latestMetrics?.jitter ?? 0,
-      reliability:
-        latestMetrics?.reliability ??
-        (reliabilityValues.length > 0
-          ? reliabilityValues.reduce((a, b) => a + b, 0) /
-            reliabilityValues.length
-          : 0),
-      throughput:
-        latestMetrics?.throughput ??
-        (throughputValues.length > 0
-          ? throughputValues.reduce((a, b) => a + b, 0) /
-            throughputValues.length
-          : 0)
-    };
-  };
-
-  const getLogIcon = (type) => {
-    switch (type) {
-      case "setup":
-        return "⚙️";
-      case "connect":
-        return "🔌";
-      case "send":
-        return "📤";
-      case "receive":
-        return "📥";
-      case "calculate":
-        return "📊";
-      case "complete":
-        return "✅";
-      default:
-        return "📝";
-    }
-  };
-
-  const getLogColor = (type) => {
-    switch (type) {
-      case "setup":
-        return "#667eea";
-      case "connect":
-        return "#4facfe";
-      case "send":
-        return "#f093fb";
-      case "receive":
-        return "#764ba2";
-      case "calculate":
-        return "#43e97b";
-      case "complete":
-        return "#28a745";
-      default:
-        return "#666";
-    }
-  };
-
   return (
-    <div className="live-progress-page">
-      <div className="page-header">
-        <div className="header-left">
-          <h1>Live Test Progress</h1>
-          {testRun && (
-            <div className="test-info">
-              <span className="test-name">
-                {testRun.configuration?.testName ||
-                  `Test ${testRunId.substring(0, 8)}`}
-              </span>
-              <span className={`status-badge ${testRun.status}`}>
-                {testRun.status === "running"
-                  ? "🟢 Running"
-                  : testRun.status === "completed"
-                  ? "✅ Completed"
-                  : testRun.status === "failed"
-                  ? "❌ Failed"
-                  : "⏸️ Unknown"}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="header-actions">
-          <button
-            className="action-btn"
-            onClick={() => navigate(`/results?testRunId=${testRunId}`)}
-          >
-            Results & Dashboard
-          </button>
-        </div>
-      </div>
+    <div className="container live-page">
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {announcement}
+      </p>
 
-      {testRun?.progress && (
-        <div className="overall-progress">
-          <div className="progress-header">
-            <h2>Overall Progress</h2>
-            <span className="progress-percent">
-              {testRun.progress.total > 0
-                ? Math.round(
-                    ((testRun.progress.completed || 0) /
-                      testRun.progress.total) *
-                      100
-                  )
-                : 0}
-              %
+      <header className="live-header">
+        <div>
+          <h1>Live progress</h1>
+          <div className="live-subhead">
+            <span className="live-name">
+              {testRun.configuration?.testName || `Test ${testRunId.slice(0, 8)}`}
+            </span>
+            <span className={`status-badge ${testRun.status}`}>
+              {STATUS_LABEL[testRun.status] || "Unknown"}
+            </span>
+            <span className={`badge ${mode === "live" ? "badge-warning" : "badge-primary"}`}>
+              {mode === "live" ? "Live" : "Simulated"}
             </span>
           </div>
-          <div className="progress-bar-large">
-            <div
-              className="progress-fill-large"
-              style={{
-                width: `${
-                  testRun.progress.total > 0
-                    ? ((testRun.progress.completed || 0) /
-                        testRun.progress.total) *
-                      100
-                    : 0
-                }%`
-              }}
-            ></div>
-          </div>
-          <div className="progress-details">
-            <div className="progress-item">
-              <strong>Test:</strong> {testRun.progress.completed || 0} of{" "}
-              {testRun.progress.total || 0}
-            </div>
-            {testRun.progress.currentProtocol && (
-              <div className="progress-item">
-                <strong>Current:</strong> {testRun.progress.currentProtocol}
-                {testRun.progress.currentScenario &&
-                  ` - ${testRun.progress.currentScenario}`}
-              </div>
-            )}
-            {testRun.startTime && (
-              <div className="progress-item">
-                <strong>Started:</strong>{" "}
-                {new Date(testRun.startTime).toLocaleTimeString()}
-              </div>
-            )}
-          </div>
+        </div>
+        <button
+          className={`btn ${testRun.status === "completed" ? "btn-primary" : "btn-secondary"}`}
+          onClick={() => navigate(`/results?testRunId=${testRunId}`)}
+        >
+          {testRun.status === "completed" ? "View results →" : "Results & dashboard"}
+        </button>
+      </header>
+
+      {/* Overall progress */}
+      <section className="card card-pad progress-card">
+        <div className="progress-top">
+          <h2>Overall progress</h2>
+          <span className="progress-percent">{percent}%</span>
+        </div>
+        <div
+          className="progress-track"
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Overall benchmark progress"
+        >
+          <div className={`progress-fill ${isRunning ? "animated" : ""}`} style={{ width: `${percent}%` }} />
+        </div>
+        <div className="progress-meta">
+          <span>{completed} of {total} benchmarks</span>
+          {testRun.progress?.currentProtocol && isRunning && (
+            <span>
+              Testing <strong>{testRun.progress.currentProtocol}</strong>
+              {testRun.progress.currentScenario && ` · ${testRun.progress.currentScenario}`}
+            </span>
+          )}
+          {testRun.startTime && (
+            <span>Started {new Date(testRun.startTime).toLocaleTimeString()}</span>
+          )}
+        </div>
+      </section>
+
+      {testRun.status === "failed" && (
+        <div className="alert alert-danger">
+          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <span>{testRun.error || "The benchmark failed to complete."}</span>
         </div>
       )}
 
-      <div className="progress-grid">
-        {/* Protocol Status Cards */}
-        <div className="protocol-status-section">
-          <h2>Protocol Status</h2>
-          <div className="protocol-cards">
-            {protocols.map((protocol) => {
-              const protocolLogs = logsByProtocol[protocol] || [];
-              const lastLog = protocolLogs[protocolLogs.length - 1];
-              const metrics = getCurrentMetrics(protocol);
-              const isActive = testRun?.progress?.currentProtocol === protocol;
-
-              return (
-                <div
-                  key={protocol}
-                  className={`protocol-card ${isActive ? "active" : ""}`}
-                >
-                  <div className="protocol-card-header">
-                    <h3>{protocol}</h3>
-                    {isActive && <span className="active-badge">ACTIVE</span>}
-                  </div>
-                  {metrics ? (
-                    <div className="protocol-metrics">
-                      <div className="metric-item">
-                        <span className="metric-label">Latency:</span>
-                        <span className="metric-value">
-                          {metrics.latency.toFixed(2)}ms
-                        </span>
-                      </div>
-                      <div className="metric-item">
-                        <span className="metric-label">Reliability:</span>
-                        <span className="metric-value">
-                          {metrics.reliability.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="metric-item">
-                        <span className="metric-label">Throughput:</span>
-                        <span className="metric-value">
-                          {(metrics.throughput / 1000).toFixed(2)}kbps
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="protocol-metrics">
-                      <div className="metric-item">
-                        <span className="metric-label">Status:</span>
-                        <span className="metric-value">No results yet</span>
-                      </div>
-                    </div>
-                  )}
-                  {lastLog && (
-                    <div className="last-action">
-                      <span className="action-icon">
-                        {getLogIcon(lastLog.type)}
-                      </span>
-                      <span className="action-text">{lastLog.message}</span>
-                    </div>
-                  )}
-                  <div className="log-count">
-                    {protocolLogs.length} log entries
-                  </div>
+      {/* Protocol status */}
+      <section className="results-block">
+        <h2 className="section-heading">Protocol status</h2>
+        <div className="protocol-status-grid">
+          {protocols.map((protocol, i) => {
+            const status = protocolStatus(protocol, {
+              resultsByProtocol,
+              scenarioCount,
+              testRun
+            });
+            const list = resultsByProtocol[protocol] || [];
+            const latest = list[list.length - 1]?.metrics;
+            const failed = latest && isResultFailed(latest);
+            const logsForP = logsByProtocol[protocol] || [];
+            const lastLog = logsForP[logsForP.length - 1];
+            return (
+              <div key={protocol} className={`protocol-status-card ${status}`}>
+                <div className="psc-head">
+                  <span className="protocol-chip">
+                    <span className="protocol-dot" style={{ background: protocolColor(protocol, i) }} />
+                    {protocol}
+                  </span>
+                  <span className={`status-badge ${status}`}>{STATUS_LABEL[status]}</span>
                 </div>
-              );
-            })}
-          </div>
+                {latest && !failed ? (
+                  <dl className="psc-metrics">
+                    <div><dt>Latency</dt><dd>{formatMetricValue("latency", latest.latency)}</dd></div>
+                    <div><dt>Reliability</dt><dd>{formatMetricValue("reliability", latest.reliability)}</dd></div>
+                    <div><dt>Throughput</dt><dd>{formatMetricValue("throughput", latest.throughput)}</dd></div>
+                  </dl>
+                ) : failed ? (
+                  <p className="psc-note danger">{latest.error || "No data returned"}</p>
+                ) : (
+                  <p className="psc-note">
+                    {status === "running" ? "Benchmarking…" : "Waiting to start"}
+                  </p>
+                )}
+                <div className="psc-foot">
+                  <span>{list.length}/{scenarioCount || "?"} scenarios</span>
+                  {lastLog && <span className="psc-lastlog">{logType(lastLog.type).icon} {lastLog.message}</span>}
+                </div>
+              </div>
+            );
+          })}
         </div>
+      </section>
 
-        {/* Live Metrics Charts */}
-        {results.length > 0 && (
-          <div className="charts-section">
-            <h2>Live Metrics</h2>
-            <div className="chart-container">
+      {/* Live charts — only once real data exists */}
+      {results.length > 0 && (
+        <section className="results-block">
+          <h2 className="section-heading">Live metrics</h2>
+          <div className="live-charts">
+            <div className="chart-block">
+              <h3 className="chart-heading">Normalised comparison</h3>
               <ProtocolComparisonChart results={results} />
             </div>
-            <div className="chart-container">
+            <div className="chart-block">
+              <h3 className="chart-heading">Latency by scenario</h3>
               <LatencyTrendChart results={results} />
             </div>
           </div>
-        )}
-      </div>
+        </section>
+      )}
 
-      {/* Detailed Execution Log */}
-      <div className="execution-log-section">
-        <div className="log-header">
-          <h2>Detailed Execution Log</h2>
+      {/* Execution log */}
+      <section className="results-block">
+        <div className="log-toolbar">
+          <h2 className="section-heading">Execution log</h2>
           <div className="log-controls">
-            <label className="auto-scroll-label">
+            <div className="segmented log-filter" role="group" aria-label="Filter log entries">
+              {LOG_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  aria-pressed={filter === f.id}
+                  onClick={() => setFilter(f.id)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <label className="auto-scroll">
               <input
                 type="checkbox"
                 checked={autoScroll}
@@ -358,215 +333,47 @@ function LiveProgressPage() {
               />
               Auto-scroll
             </label>
-            <button
-              className="clear-btn"
-              onClick={() => {
-                if (logContainerRef.current) {
-                  logContainerRef.current.scrollTop = 0;
-                }
-              }}
-            >
-              Scroll to Top
-            </button>
           </div>
         </div>
-        <div className="log-container" ref={logContainerRef}>
-          {logs.length === 0 ? (
+
+        <div className="log-container" ref={logContainerRef} onScroll={handleLogScroll}>
+          {filteredLogs.length === 0 ? (
             <div className="log-empty">
-              <p>Waiting for test logs...</p>
-              <p className="log-empty-hint">
-                Test execution details will appear here as tests run.
-              </p>
+              <p>{logs.length === 0 ? "Waiting for the first log entry…" : "No entries match this filter."}</p>
             </div>
           ) : (
-            logs.map((log, index) => (
-              <div
-                key={index}
-                className="log-entry-detailed"
-                style={{ borderLeftColor: getLogColor(log.type) }}
-              >
-                <div className="log-entry-header">
-                  <div className="log-icon-large">{getLogIcon(log.type)}</div>
-                  <div className="log-meta">
-                    <span
-                      className="log-type-badge"
-                      style={{
-                        backgroundColor: getLogColor(log.type) + "20",
-                        color: getLogColor(log.type)
-                      }}
-                    >
-                      {log.type.toUpperCase()}
-                    </span>
-                    {log.protocol && (
-                      <span className="log-protocol">
-                        Protocol: {log.protocol}
-                      </span>
-                    )}
-                    <span className="log-timestamp">
-                      {new Date(log.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="log-message-detailed">{log.message}</div>
-
-                {log.formula && (
-                  <div className="log-formula-box">
-                    <strong className="formula-title">
-                      📐 Calculation Formula:
-                    </strong>
-                    <code className="formula-code">{log.formula}</code>
-                  </div>
-                )}
-
-                {log.networkConditions && (
-                  <div className="log-network-conditions">
-                    <strong>Network Conditions Applied:</strong>
-                    <ul>
-                      {log.networkConditions.latency && (
-                        <li>Latency: {log.networkConditions.latency}ms</li>
-                      )}
-                      {log.networkConditions.packetLoss !== undefined && (
-                        <li>
-                          Packet Loss: {log.networkConditions.packetLoss}%
-                        </li>
-                      )}
-                      {log.networkConditions.jitter && (
-                        <li>Jitter: {log.networkConditions.jitter}ms</li>
-                      )}
-                      {log.networkConditions.unstable && (
-                        <li>Unstable Network: Yes</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-                {log.metrics && typeof log.metrics === "object" && (
-                  <div className="log-metrics-detailed">
-                    <strong>Calculated Metrics:</strong>
-                    <div className="metrics-grid">
-                      {log.metrics.latency !== undefined && (
-                        <div className="metric-box">
-                          <span className="metric-name">Latency</span>
-                          <span className="metric-number">
-                            {log.metrics.latency.toFixed(2)}ms
-                          </span>
-                        </div>
-                      )}
-                      {log.metrics.reliability !== undefined && (
-                        <div className="metric-box">
-                          <span className="metric-name">Reliability</span>
-                          <span className="metric-number">
-                            {log.metrics.reliability.toFixed(1)}%
-                          </span>
-                        </div>
-                      )}
-                      {log.metrics.throughput !== undefined && (
-                        <div className="metric-box">
-                          <span className="metric-name">Throughput</span>
-                          <span className="metric-number">
-                            {(log.metrics.throughput / 1000).toFixed(2)}kbps
-                          </span>
-                        </div>
-                      )}
-                      {log.metrics.jitter !== undefined && (
-                        <div className="metric-box">
-                          <span className="metric-name">Jitter</span>
-                          <span className="metric-number">
-                            {log.metrics.jitter.toFixed(2)}ms
-                          </span>
-                        </div>
-                      )}
+            <ul className="log-list">
+              {filteredLogs.map((log, index) => {
+                const meta = logType(log.type);
+                return (
+                  <li key={log._id || index} className={`log-entry tone-${meta.tone}`}>
+                    <span className="log-icon" aria-hidden="true">{meta.icon}</span>
+                    <div className="log-body">
+                      <div className="log-line">
+                        <span className={`log-tag tone-${meta.tone}`}>{meta.label}</span>
+                        {log.protocol && <span className="log-proto">{log.protocol}</span>}
+                        <time className="log-time">
+                          {new Date(log.timestamp).toLocaleTimeString()}
+                        </time>
+                      </div>
+                      <p className="log-message">{log.message}</p>
+                      {log.formula && <code className="log-formula">{log.formula}</code>}
                     </div>
-                  </div>
-                )}
-
-                {(log.sentCount !== undefined ||
-                  log.receivedCount !== undefined) && (
-                  <div className="log-message-stats">
-                    {log.sentCount !== undefined && (
-                      <span className="stat-item">
-                        <strong>Sent:</strong> {log.sentCount}
-                        {log.messageCount && ` / ${log.messageCount}`}
-                      </span>
-                    )}
-                    {log.receivedCount !== undefined && (
-                      <span className="stat-item">
-                        <strong>Received:</strong> {log.receivedCount}
-                      </span>
-                    )}
-                    {log.progress && (
-                      <span className="stat-item">
-                        <strong>Progress:</strong> {log.progress}
-                      </span>
-                    )}
-                    {log.avgLatency !== undefined && (
-                      <span className="stat-item">
-                        <strong>Avg Latency:</strong>{" "}
-                        {log.avgLatency.toFixed(2)}ms
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {log.broker && (
-                  <div className="log-detail">
-                    <strong>Broker URL:</strong> {log.broker}
-                  </div>
-                )}
-
-                {log.topic && (
-                  <div className="log-detail">
-                    <strong>Topic:</strong> <code>{log.topic}</code>
-                  </div>
-                )}
-              </div>
-            ))
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
-      </div>
-
-      {/* Test Configuration Summary */}
-      {testRun && (
-        <div className="config-summary">
-          <h2>Test Configuration</h2>
-          <div className="config-grid">
-            <div className="config-item">
-              <strong>Protocols:</strong>
-              <div className="protocol-tags">
-                {protocols.map((p) => (
-                  <span key={p} className="protocol-tag">
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="config-item">
-              <strong>Scenarios:</strong>
-              <div className="scenario-tags">
-                {scenarios.map((s, i) => (
-                  <span key={i} className="scenario-tag">
-                    {s.name || s}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="config-item">
-              <strong>Start Time:</strong>
-              <span>
-                {testRun.startTime
-                  ? new Date(testRun.startTime).toLocaleString()
-                  : "N/A"}
-              </span>
-            </div>
-            {testRun.endTime && (
-              <div className="config-item">
-                <strong>End Time:</strong>
-                <span>{new Date(testRun.endTime).toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        {!autoScroll && filteredLogs.length > 0 && (
+          <button
+            className="btn btn-secondary btn-sm jump-latest"
+            onClick={() => setAutoScroll(true)}
+          >
+            ↓ Jump to latest
+          </button>
+        )}
+      </section>
     </div>
   );
 }

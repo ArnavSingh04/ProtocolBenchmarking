@@ -1,4 +1,5 @@
 import { getRunById } from "../../../lib/server/runService";
+import { isValidRunId } from "../../../imports/shared/validation";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -7,10 +8,15 @@ export default async function handler(req, res) {
   }
 
   const testRunId = req.query.testRunId;
-  if (!testRunId) {
-    return res.status(400).json({ error: "testRunId is required" });
+  if (!isValidRunId(testRunId)) {
+    return res.status(400).json({ error: "A valid testRunId is required" });
   }
 
-  const testRun = await getRunById(testRunId);
-  return res.status(200).json({ testRun: testRun || null });
+  try {
+    const testRun = await getRunById(testRunId);
+    return res.status(200).json({ testRun: testRun || null });
+  } catch (error) {
+    console.error("[testRun] lookup failed:", error);
+    return res.status(500).json({ error: "Could not load the test run." });
+  }
 }

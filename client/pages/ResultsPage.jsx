@@ -1,5 +1,4 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTestRunContext } from "../contexts/TestRunContext";
 import { useEffectiveTestRunId } from "../hooks/useEffectiveTestRunId";
@@ -7,7 +6,28 @@ import { useRunData } from "../hooks/useRunData";
 import ProtocolComparisonChart from "../components/charts/ProtocolComparisonChart";
 import LatencyTrendChart from "../components/charts/LatencyTrendChart";
 import RadarChart from "../components/charts/RadarChart";
-import TestProgressLog from "../components/TestProgressLog";
+import MetricComparisonTable from "../components/MetricComparisonTable";
+import {
+  rankedProtocols,
+  protocolColor,
+  formatDuration,
+  durationBetween,
+  METRICS
+} from "../../imports/shared/metrics";
+import { buildReport, reportFileName } from "../../imports/shared/report";
+
+function StatusBadge({ status }) {
+  const map = {
+    running: "Running",
+    completed: "Completed",
+    failed: "Failed"
+  };
+  return (
+    <span className={`status-badge ${status || "unknown"}`}>
+      {map[status] || "Unknown"}
+    </span>
+  );
+}
 
 function ResultsPage() {
   const navigate = useNavigate();
@@ -27,52 +47,56 @@ function ResultsPage() {
     }
   }, [testRun?.status, refreshSession]);
 
+  const scores = testRun?.results || {};
+  const ranked = useMemo(() => rankedProtocols(scores), [scores]);
+  const successful = ranked.filter(([, d]) => !d.failed);
+  const failedRanked = ranked.filter(([, d]) => d.failed);
+  const winner = successful[0];
+  const mode = testRun?.mode || testRun?.configuration?.mode || "simulation";
+  const simulated = mode !== "live";
+  const singleProtocol = successful.length === 1;
+
   const handleDownloadReport = () => {
     if (!testRun) return;
-
-    const report = {
-      testRun: {
-        id: testRun._id,
-        testName: testRun.configuration?.testName || "Untitled Test",
-        startTime: testRun.startTime,
-        endTime: testRun.endTime,
-        status: testRun.status,
-        protocols: testRun.protocols,
-        scenarios: testRun.scenarios
-      },
-      results: testRun.results,
-      detailedResults: results,
-      attributes: testRun.attributes
-    };
-
+    const generatedAt = new Date().toISOString();
+    const report = buildReport(testRun, results, { generatedAt });
     const blob = new Blob([JSON.stringify(report, null, 2)], {
       type: "application/json"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `protocol-test-report-${testRun._id}.json`;
+    a.download = reportFileName(testRun, generatedAt);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
+  // ---- loading / empty / error states ----
   if (!sessionReady || (isLoading && !testRun)) {
     return (
-      <div className="results-page">
-        <div className="loading">Loading test results...</div>
+      <div className="container results-page">
+        <div className="loading">
+          <div className="spinner" />
+          <p>Loading results…</p>
+        </div>
       </div>
     );
   }
 
   if (!testRunId) {
     return (
-      <div className="results-page">
-        <div className="error-message">
-          <h2>No Tests Yet</h2>
-          <p>Run a benchmark from Configuration to see results here.</p>
-          <button onClick={() => navigate("/")}>Go to Configuration</button>
+      <div className="container results-page">
+        <div className="empty-state">
+          <div className="empty-icon" aria-hidden="true">📊</div>
+          <h2>No results yet</h2>
+          <p>Run a benchmark from the configuration page to see results here.</p>
+          <div className="state-actions">
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
+              Configure a benchmark
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -80,27 +104,30 @@ function ResultsPage() {
 
   if (!testRun && hasLoaded) {
     return (
-      <div className="results-page">
-        <div className="error-message">
-          <h2>Test Run Not Found</h2>
-          <p>
-            This test may have been removed. Pick another run from History or
-            start a new test.
-          </p>
-          <div className="action-buttons">
+      <div className="container results-page">
+        <div className="error-state">
+          <div className="empty-icon" aria-hidden="true">🔍</div>
+          <h2>Test run not found</h2>
+          <p>This run may have been removed. Open another from history or start a new test.</p>
+          <div className="state-actions">
             {latestTestRunId && (
               <button
+                className="btn btn-secondary"
                 onClick={() => {
                   clearActiveTestRun();
                   refreshSession();
                   navigate(`/results?testRunId=${latestTestRunId}`);
                 }}
               >
-                View Latest Test
+                View latest
               </button>
             )}
-            <button onClick={() => navigate("/history")}>Browse History</button>
-            <button onClick={() => navigate("/")}>New Test</button>
+            <button className="btn btn-secondary" onClick={() => navigate("/history")}>
+              Browse history
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
+              New test
+            </button>
           </div>
         </div>
       </div>
@@ -109,8 +136,11 @@ function ResultsPage() {
 
   if (!testRun) {
     return (
-      <div className="results-page">
-        <div className="loading">Connecting to test run...</div>
+      <div className="container results-page">
+        <div className="loading">
+          <div className="spinner" />
+          <p>Connecting to test run…</p>
+        </div>
       </div>
     );
   }
@@ -118,250 +148,274 @@ function ResultsPage() {
   const isRunning = testRun.status === "running";
   const protocols = testRun.protocols || [];
   const scenarios = testRun.scenarios || [];
+  const duration = durationBetween(testRun.startTime, testRun.endTime);
+  const hasCharts = results.length > 0;
 
-  const sortedResults = testRun.results
-    ? Object.entries(testRun.results).sort(
-        (a, b) => (b[1]?.score || 0) - (a[1]?.score || 0)
-      )
+  // Top strengths for the winner (highest weighted normalised attributes).
+  const winnerStrengths = winner
+    ? Object.entries(winner[1].normalized || {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([key]) => METRICS[key]?.label || key)
     : [];
 
-  const resultsLink = (path) =>
-    testRunId ? `${path}?testRunId=${testRunId}` : path;
-
   return (
-    <div className="results-page dashboard">
-      <div className="results-header dashboard-header">
-        <div>
-          <h1>Results & Dashboard</h1>
-          {isViewingLatest && (
-            <p className="section-description" style={{ marginTop: "0.25rem" }}>
-              Showing your most recent test run
-            </p>
-          )}
-          {urlTestRunId && urlTestRunId !== latestTestRunId && (
-            <p className="section-description" style={{ marginTop: "0.25rem" }}>
-              Viewing a past test from history
-            </p>
-          )}
-        </div>
-        <div className="header-actions">
-          <div className={`status-badge ${testRun.status}`}>
-            {isRunning
-              ? "🟢 Running"
-              : testRun.status === "completed"
-              ? "✅ Completed"
-              : testRun.status === "failed"
-              ? "❌ Failed"
-              : "⏸️ Unknown"}
+    <div className="container results-page">
+      <header className="results-header">
+        <div className="results-title">
+          <h1>Results</h1>
+          <div className="results-badges">
+            <StatusBadge status={testRun.status} />
+            <span className={`badge ${simulated ? "badge-primary" : "badge-warning"}`}>
+              {simulated ? "Simulated" : "Live"}
+            </span>
+            {isViewingLatest && <span className="badge badge-neutral">Latest run</span>}
+            {urlTestRunId && urlTestRunId !== latestTestRunId && (
+              <span className="badge badge-neutral">From history</span>
+            )}
           </div>
-          {testRun.status === "completed" && sortedResults.length > 0 && (
-            <button className="download-btn" onClick={handleDownloadReport}>
-              Download Report
+        </div>
+        <div className="results-actions">
+          {testRun.status === "completed" && successful.length > 0 && (
+            <button className="btn btn-secondary" onClick={handleDownloadReport}>
+              ⬇ Download report
             </button>
           )}
           {isRunning && (
             <button
-              className="action-btn"
-              onClick={() => navigate(resultsLink("/live"))}
+              className="btn btn-primary"
+              onClick={() => navigate(`/live?testRunId=${testRunId}`)}
             >
-              Live Progress
+              View live progress
             </button>
           )}
-        </div>
-      </div>
-
-      <div className="results-content dashboard-content">
-        <div className="test-info">
-          <h2>Test Configuration</h2>
-          <div className="info-grid">
-            <div className="info-item">
-              <span className="info-label">Test Name:</span>
-              <span className="info-value">
-                {testRun.configuration?.testName || "Untitled"}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Start Time:</span>
-              <span className="info-value">
-                {testRun.startTime
-                  ? new Date(testRun.startTime).toLocaleString()
-                  : "N/A"}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">End Time:</span>
-              <span className="info-value">
-                {testRun.endTime
-                  ? new Date(testRun.endTime).toLocaleString()
-                  : "N/A"}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Protocols:</span>
-              <span className="info-value">
-                {protocols.join(", ") || "N/A"}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Scenarios:</span>
-              <span className="info-value">
-                {scenarios.map((s) => s.name || s).join(", ") || "N/A"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {isRunning && (
-          <div className="test-progress">
-            <h3>Test Progress</h3>
-            {testRun.progress ? (
-              <>
-                <div className="progress-info">
-                  <div className="progress-stats">
-                    <span>
-                      Test {testRun.progress.completed || 0} of{" "}
-                      {testRun.progress.total || 0}
-                    </span>
-                    <span className="progress-percentage">
-                      {testRun.progress.total > 0
-                        ? Math.round(
-                            ((testRun.progress.completed || 0) /
-                              testRun.progress.total) *
-                              100
-                          )
-                        : 0}
-                      %
-                    </span>
-                  </div>
-                  {testRun.progress.currentProtocol && (
-                    <div className="current-test">
-                      <strong>Current:</strong>{" "}
-                      {testRun.progress.currentProtocol}
-                      {testRun.progress.currentScenario &&
-                        ` - ${testRun.progress.currentScenario}`}
-                    </div>
-                  )}
-                </div>
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${
-                        testRun.progress.total > 0
-                          ? ((testRun.progress.completed || 0) /
-                              testRun.progress.total) *
-                            100
-                          : 0
-                      }%`
-                    }}
-                  />
-                </div>
-              </>
-            ) : (
-              <p>Tests are running. Charts update as results arrive.</p>
-            )}
-            <TestProgressLog testRunId={testRunId} />
-          </div>
-        )}
-
-        {sortedResults.length > 0 && (
-          <div className="fitness-scores-section">
-            <h2>Fitness Scores & Recommendations</h2>
-            <div className="rankings">
-              {sortedResults.map(([protocol, data], index) => (
-                <div key={protocol} className="ranking-card">
-                  <div className="rank-badge">#{index + 1}</div>
-                  <div className="ranking-content">
-                    <h3>{protocol}</h3>
-                    <div className="score-display">
-                      <span className="score-label">Fitness Score:</span>
-                      <span className="score-value-large">
-                        {data.score}/100
-                      </span>
-                    </div>
-                    <div className="recommendation-box">
-                      <strong>Recommendation:</strong>
-                      <p>{data.recommendation}</p>
-                    </div>
-                    <div className="key-metrics">
-                      <div className="metric">
-                        <span className="metric-label">Avg Latency:</span>
-                        <span className="metric-value">
-                          {data.metrics?.latency
-                            ? `${data.metrics.latency.toFixed(2)}ms`
-                            : "N/A"}
-                        </span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">Reliability:</span>
-                        <span className="metric-value">
-                          {data.metrics?.reliability
-                            ? `${data.metrics.reliability.toFixed(1)}%`
-                            : "N/A"}
-                        </span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">Throughput:</span>
-                        <span className="metric-value">
-                          {data.metrics?.throughput
-                            ? `${(data.metrics.throughput / 1000).toFixed(2)}kbps`
-                            : "N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {(results.length > 0 || testRun.status === "completed" || isRunning) && (
-          <>
-            <div className="chart-section">
-              <h2>Protocol Comparison</h2>
-              {results.length > 0 ? (
-                <ProtocolComparisonChart results={results} />
-              ) : (
-                <div className="chart-empty">No comparison data yet</div>
-              )}
-            </div>
-
-            <div className="chart-section">
-              <h2>Latency Trends</h2>
-              {results.length > 0 ? (
-                <LatencyTrendChart results={results} />
-              ) : (
-                <div className="chart-empty">No latency data yet</div>
-              )}
-            </div>
-
-            <div className="chart-section">
-              <h2>Attribute Comparison (Radar)</h2>
-              {results.length > 0 ? (
-                <RadarChart results={results} attributes={testRun.attributes} />
-              ) : (
-                <div className="chart-empty">No radar data yet</div>
-              )}
-            </div>
-          </>
-        )}
-
-        {results.length === 0 && testRun.status === "completed" && (
-          <div className="warning-message">
-            <p>
-              Tests completed but detailed metrics are missing. Check server logs
-              for errors.
-            </p>
-          </div>
-        )}
-
-        <div className="action-buttons">
-          <button onClick={() => navigate("/history")}>History</button>
-          <button className="new-test-btn" onClick={() => navigate("/")}>
-            Run New Test
+          <button className="btn btn-secondary" onClick={() => navigate("/")}>
+            Run new test
           </button>
         </div>
+      </header>
+
+      {/* Test configuration summary */}
+      <section className="card card-pad config-recap">
+        <div className="recap-name">
+          <h2>{testRun.configuration?.testName || "Untitled test"}</h2>
+        </div>
+        <dl className="recap-grid">
+          <div>
+            <dt>Protocols</dt>
+            <dd>
+              {protocols.map((p, i) => (
+                <span key={p} className="protocol-chip recap-chip">
+                  <span className="protocol-dot" style={{ background: protocolColor(p, i) }} />
+                  {p}
+                </span>
+              ))}
+            </dd>
+          </div>
+          <div>
+            <dt>Scenarios</dt>
+            <dd>{scenarios.map((s) => s.name || s).join(", ") || "—"}</dd>
+          </div>
+          <div>
+            <dt>Started</dt>
+            <dd>{testRun.startTime ? new Date(testRun.startTime).toLocaleString() : "—"}</dd>
+          </div>
+          <div>
+            <dt>Duration</dt>
+            <dd>{duration != null ? formatDuration(duration) : isRunning ? "Running…" : "—"}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {isRunning && (
+        <div className="alert alert-info">
+          <span className="alert-icon" aria-hidden="true">⏳</span>
+          <span>
+            This benchmark is still running.{" "}
+            <button className="link-btn" onClick={() => navigate(`/live?testRunId=${testRunId}`)}>
+              Watch live progress
+            </button>{" "}
+            — results appear here as each protocol completes.
+          </span>
+        </div>
+      )}
+
+      {testRun.status === "failed" && successful.length === 0 && (
+        <div className="alert alert-danger">
+          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <span>
+            No protocol produced usable data{testRun.error ? `: ${testRun.error}` : "."}{" "}
+            {!simulated && "In live mode this usually means the endpoints were unreachable."}
+          </span>
+        </div>
+      )}
+
+      {/* Winner */}
+      {winner && (
+        <section className="winner-card card">
+          <div className="winner-ribbon">Recommended</div>
+          <div className="winner-body">
+            <div className="winner-headline">
+              <span
+                className="winner-dot"
+                style={{ background: protocolColor(winner[0]) }}
+                aria-hidden="true"
+              />
+              <div>
+                <p className="winner-eyebrow">Best fit for your priorities</p>
+                <h2 className="winner-name">{winner[0]}</h2>
+              </div>
+              <div className="winner-score">
+                <span className="winner-score-value">{winner[1].score}</span>
+                <span className="winner-score-max">/100</span>
+                <span className="winner-score-label">fitness score</span>
+              </div>
+            </div>
+            <p className="winner-reco">{winner[1].recommendation}</p>
+            {winnerStrengths.length > 0 && !singleProtocol && (
+              <div className="winner-strengths">
+                <span className="muted">Strongest on:</span>
+                {winnerStrengths.map((label) => (
+                  <span key={label} className="badge badge-success">{label}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Confidence / caveats */}
+      {(singleProtocol || simulated || failedRanked.length > 0) && (successful.length > 0) && (
+        <div className="alert alert-warning confidence-note">
+          <span className="alert-icon" aria-hidden="true">ⓘ</span>
+          <div>
+            <strong>How confident should you be?</strong>
+            <ul className="confidence-list">
+              {simulated && (
+                <li>
+                  These are <strong>modelled</strong> results from a deterministic
+                  simulation, not live network measurements.
+                </li>
+              )}
+              {singleProtocol && (
+                <li>
+                  Only one protocol produced data, so the fitness score is not a
+                  comparison — the raw metrics below are the meaningful output.
+                </li>
+              )}
+              {failedRanked.length > 0 && (
+                <li>
+                  {failedRanked.map(([n]) => n).join(", ")}{" "}
+                  {failedRanked.length > 1 ? "were" : "was"} excluded (no usable
+                  data) and cannot be ranked.
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Full ranking */}
+      {ranked.length > 0 && (
+        <section className="ranking-section">
+          <h2 className="section-heading">Protocol ranking</h2>
+          <ol className="ranking-list">
+            {ranked.map(([protocol, data], index) => (
+              <li
+                key={protocol}
+                className={`ranking-row ${data.failed ? "failed" : ""}`}
+              >
+                <span className="rank-num">{data.failed ? "—" : `#${index + 1}`}</span>
+                <span className="protocol-chip">
+                  <span className="protocol-dot" style={{ background: protocolColor(protocol, index) }} />
+                  {protocol}
+                </span>
+                <div className="rank-score">
+                  {data.failed ? (
+                    <span className="badge badge-danger">Failed{data.error ? `: ${data.error}` : ""}</span>
+                  ) : (
+                    <>
+                      <div className="score-bar" aria-hidden="true">
+                        <span style={{ width: `${data.score}%`, background: protocolColor(protocol, index) }} />
+                      </div>
+                      <span className="score-num">{data.score}/100</span>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+          <details className="score-explainer">
+            <summary>How is the fitness score calculated?</summary>
+            <p>
+              For each protocol we average its metrics across every scenario, then
+              normalise each metric to a 0–100 scale across the protocols being
+              compared (inverting metrics where lower is better, like latency).
+              Each normalised value is multiplied by the weight you assigned to
+              that attribute, and the weighted average becomes the fitness score.
+              Protocols that produced no usable data are excluded so they can
+              never appear as a false winner.
+            </p>
+          </details>
+        </section>
+      )}
+
+      {/* Raw metric comparison */}
+      {hasCharts && (
+        <section className="results-block">
+          <h2 className="section-heading">Measured metrics</h2>
+          <p className="section-description">
+            Raw values per protocol (averaged across scenarios). The best value in
+            each column is highlighted.
+          </p>
+          <MetricComparisonTable results={results} />
+        </section>
+      )}
+
+      {/* Charts */}
+      {hasCharts ? (
+        <div className="charts-grid">
+          <section className="results-block chart-block">
+            <h3 className="chart-heading">Normalised comparison</h3>
+            <p className="section-description">
+              Every attribute on one 0–100 scale (higher is better), so
+              incompatible units can be compared fairly.
+            </p>
+            <ProtocolComparisonChart results={results} />
+          </section>
+
+          <section className="results-block chart-block">
+            <h3 className="chart-heading">Attribute profile</h3>
+            <p className="section-description">
+              Each protocol's shape across all attributes — further out is better.
+            </p>
+            <RadarChart results={results} />
+          </section>
+
+          <section className="results-block chart-block full-span">
+            <h3 className="chart-heading">Latency by scenario</h3>
+            <p className="section-description">
+              Latency for each protocol under each scenario (lower is better).
+            </p>
+            <LatencyTrendChart results={results} />
+          </section>
+        </div>
+      ) : (
+        testRun.status === "completed" && (
+          <div className="alert alert-warning">
+            <span className="alert-icon" aria-hidden="true">⚠</span>
+            <span>The run completed but no detailed metrics were recorded.</span>
+          </div>
+        )
+      )}
+
+      <div className="results-footer-actions">
+        <button className="btn btn-secondary" onClick={() => navigate("/history")}>
+          View history
+        </button>
+        <button className="btn btn-primary" onClick={() => navigate("/")}>
+          Run another test
+        </button>
       </div>
     </div>
   );

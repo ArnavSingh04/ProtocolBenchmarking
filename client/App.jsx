@@ -1,6 +1,6 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { TestRunProvider } from "./contexts/TestRunContext";
 import MainLayout from "./layouts/MainLayout";
 import ConfigurationPage from "./pages/ConfigurationPage";
@@ -10,17 +10,22 @@ import LiveProgressPage from "./pages/LiveProgressPage";
 
 function App() {
   return (
-    <TestRunProvider>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<ConfigurationPage />} />
-          <Route path="/dashboard" element={<Navigate to="/results" replace />} />
-          <Route path="/results" element={<ResultsPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="/live" element={<LiveProgressPage />} />
-        </Routes>
-      </MainLayout>
-    </TestRunProvider>
+    <ThemeProvider>
+      <TestRunProvider>
+        <MainLayout>
+          <Routes>
+            <Route path="/" element={<ConfigurationPage />} />
+            <Route
+              path="/dashboard"
+              element={<Navigate to="/results" replace />}
+            />
+            <Route path="/results" element={<ResultsPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/live" element={<LiveProgressPage />} />
+          </Routes>
+        </MainLayout>
+      </TestRunProvider>
+    </ThemeProvider>
   );
 }
 

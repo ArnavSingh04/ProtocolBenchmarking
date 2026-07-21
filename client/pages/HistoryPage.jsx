@@ -1,130 +1,173 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useTestRunContext } from "../contexts/TestRunContext";
 import { useHistoryData } from "../hooks/useRunData";
+import {
+  rankedProtocols,
+  protocolColor,
+  durationBetween,
+  formatDuration
+} from "../../imports/shared/metrics";
+
+const STATUS_LABEL = {
+  running: "Running",
+  completed: "Completed",
+  failed: "Failed"
+};
+
+function bestProtocol(run) {
+  const ranked = rankedProtocols(run.results || {}).filter(([, d]) => !d.failed);
+  return ranked[0]?.[0] || null;
+}
 
 function HistoryPage() {
   const navigate = useNavigate();
   const { setActiveTestRunId } = useTestRunContext();
-  const { testRuns, isLoading } = useHistoryData();
+  const { testRuns, isLoading, error } = useHistoryData();
 
-  const openRun = (runId) => {
+  const openResults = (runId) => {
     setActiveTestRunId(runId);
     navigate(`/results?testRunId=${runId}`);
   };
 
   if (isLoading) {
     return (
-      <div className="history-page">
-        <div className="loading">Loading test history...</div>
+      <div className="container history-page">
+        <div className="history-header">
+          <h1>Test history</h1>
+        </div>
+        <div className="history-list">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="history-card skeleton-card">
+              <div className="skeleton" style={{ height: 22, width: "40%" }} />
+              <div className="skeleton" style={{ height: 14, width: "70%", marginTop: 12 }} />
+              <div className="skeleton" style={{ height: 14, width: "55%", marginTop: 8 }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="history-page">
+    <div className="container history-page">
       <div className="history-header">
-        <h1>Test History</h1>
-        <button className="new-test-btn" onClick={() => navigate("/")}>
-          Run New Test
+        <h1>Test history</h1>
+        <button className="btn btn-primary" onClick={() => navigate("/")}>
+          Run new test
         </button>
       </div>
 
+      {error && (
+        <div className="alert alert-danger">
+          <span className="alert-icon" aria-hidden="true">⚠</span>
+          <span>Could not load history. It will retry automatically.</span>
+        </div>
+      )}
+
       {testRuns.length === 0 ? (
         <div className="empty-state">
-          <p>No test runs found.</p>
-          <button onClick={() => navigate("/")}>Start Your First Test</button>
+          <div className="empty-icon" aria-hidden="true">🗂️</div>
+          <h2>No tests yet</h2>
+          <p>
+            Your benchmark runs will appear here. Configure protocols, scenarios
+            and attribute weights to run your first comparison.
+          </p>
+          <div className="state-actions">
+            <button className="btn btn-primary" onClick={() => navigate("/")}>
+              Start your first test
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="test-runs-list">
-          {testRuns.map((run) => (
-            <div
-              key={run._id}
-              className="test-run-card"
-              onClick={() => openRun(run._id)}
-            >
-              <div className="card-header">
-                <h3>
-                  {run.configuration?.testName ||
-                    `Test ${run._id.substring(0, 8)}`}
-                </h3>
-                <div className={`status-badge ${run.status}`}>
-                  {run.status === "running"
-                    ? "🟢 Running"
-                    : run.status === "completed"
-                    ? "✅ Completed"
-                    : run.status === "failed"
-                    ? "❌ Failed"
-                    : "⏸️ Unknown"}
-                </div>
-              </div>
-              <div className="card-info">
-                <div className="info-row">
-                  <span className="info-label">Protocols:</span>
-                  <span className="info-value">
-                    {run.protocols?.join(", ") || "N/A"}
-                  </span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Scenarios:</span>
-                  <span className="info-value">
-                    {run.scenarios?.map((s) => s.name || s).join(", ") || "N/A"}
-                  </span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Started:</span>
-                  <span className="info-value">
-                    {run.startTime
-                      ? new Date(run.startTime).toLocaleString()
-                      : "N/A"}
-                  </span>
-                </div>
-                {run.endTime && (
-                  <div className="info-row">
-                    <span className="info-label">Completed:</span>
-                    <span className="info-value">
-                      {new Date(run.endTime).toLocaleString()}
-                    </span>
+        <ul className="history-list">
+          {testRuns.map((run) => {
+            const best = bestProtocol(run);
+            const duration = durationBetween(run.startTime, run.endTime);
+            const mode = run.mode || run.configuration?.mode || "simulation";
+            const scenarioNames = (run.scenarios || [])
+              .map((s) => s.name || s)
+              .join(", ");
+            return (
+              <li key={run._id} className="history-card">
+                <div className="history-card-main">
+                  <div className="history-card-head">
+                    <button
+                      className="history-title-btn"
+                      onClick={() => openResults(run._id)}
+                    >
+                      {run.configuration?.testName || `Test ${run._id.slice(0, 8)}`}
+                    </button>
+                    <div className="history-badges">
+                      <span className={`badge ${mode === "live" ? "badge-warning" : "badge-primary"}`}>
+                        {mode === "live" ? "Live" : "Simulated"}
+                      </span>
+                      <span className={`status-badge ${run.status}`}>
+                        {STATUS_LABEL[run.status] || "Unknown"}
+                      </span>
+                    </div>
                   </div>
-                )}
-                {run.results && Object.keys(run.results).length > 0 && (
-                  <div className="info-row">
-                    <span className="info-label">Best Protocol:</span>
-                    <span className="info-value">
-                      {Object.entries(run.results).sort(
-                        (a, b) => (b[1]?.score || 0) - (a[1]?.score || 0)
-                      )[0]?.[0] || "N/A"}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="card-actions">
-                <button
-                  className="view-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openRun(run._id);
-                  }}
-                >
-                  View Results & Dashboard
-                </button>
-                {run.status === "running" && (
-                  <button
-                    className="dashboard-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTestRunId(run._id);
-                      navigate(`/live?testRunId=${run._id}`);
-                    }}
-                  >
-                    Live Progress
+
+                  <dl className="history-meta">
+                    <div>
+                      <dt>Protocols</dt>
+                      <dd className="proto-list">
+                        {(run.protocols || []).map((p, i) => (
+                          <span key={p} className="protocol-chip">
+                            <span className="protocol-dot" style={{ background: protocolColor(p, i) }} />
+                            {p}
+                          </span>
+                        ))}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Scenarios</dt>
+                      <dd className="truncate" title={scenarioNames}>
+                        {scenarioNames || "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Started</dt>
+                      <dd>{run.startTime ? new Date(run.startTime).toLocaleString() : "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Duration</dt>
+                      <dd>{duration != null ? formatDuration(duration) : "—"}</dd>
+                    </div>
+                    {best && (
+                      <div>
+                        <dt>Best fit</dt>
+                        <dd>
+                          <span className="protocol-chip">
+                            <span className="protocol-dot" style={{ background: protocolColor(best) }} />
+                            {best}
+                          </span>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+
+                <div className="history-actions">
+                  <button className="btn btn-secondary btn-sm" onClick={() => openResults(run._id)}>
+                    View results
                   </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                  {run.status === "running" && (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setActiveTestRunId(run._id);
+                        navigate(`/live?testRunId=${run._id}`);
+                      }}
+                    >
+                      Live progress
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

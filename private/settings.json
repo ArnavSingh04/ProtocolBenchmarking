@@ -1,8 +1,7 @@
 {
-    "galaxy.meteor.com": {
-      "env": {
-        "MONGO_URL": "mongodb+srv://arnavsinghsethi:JsHeX17BBXurzpIq@cluster0.uezwn8w.mongodb.net/"
-      }
+  "galaxy.meteor.com": {
+    "env": {
+      "MONGO_URL": "REPLACE_WITH_YOUR_MONGO_CONNECTION_STRING"
     }
+  }
 }
-// meteor deploy testmyprotocol.meteorapp.com --free --mongo

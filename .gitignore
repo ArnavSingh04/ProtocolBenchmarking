@@ -7,3 +7,20 @@ node_modules/
 coverage/
 *.meteor-port
 
+# Next.js build output
+.next/
+
+# Local persistence fallback (runtime data, not source)
+.local-data/
+
+# Secrets / environment
+.env
+.env.local
+.env.*.local
+private/settings.json
+
+# Test artifacts
+test-results/
+playwright-report/
+.playwright/
+

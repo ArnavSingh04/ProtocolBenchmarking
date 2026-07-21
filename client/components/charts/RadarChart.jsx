@@ -1,5 +1,4 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -10,6 +9,14 @@ import {
   Legend
 } from "chart.js";
 import { Radar } from "react-chartjs-2";
+import {
+  buildProtocolComparison,
+  METRICS,
+  METRIC_KEYS,
+  formatMetricValue
+} from "../../../imports/shared/metrics";
+import { useChartTheme } from "../../hooks/useChartTheme";
+import { legendConfig, tooltipConfig, radialScale } from "./chartTheme";
 
 ChartJS.register(
   RadialLinearScale,
@@ -20,137 +27,76 @@ ChartJS.register(
   Legend
 );
 
-function RadarChart({ results, attributes }) {
-  // Aggregate metrics by protocol
-  const protocolMetrics = {};
+function hexToRgba(hex, alpha) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
-  results.forEach((result) => {
-    if (!protocolMetrics[result.protocol]) {
-      protocolMetrics[result.protocol] = {
-        latency: [],
-        throughput: [],
-        reliability: [],
-        jitter: [],
-        ordering: [],
-        dataIntegrity: [],
-        resourceUsage: [],
-        securityOverhead: []
-      };
-    }
+/**
+ * Multi-attribute radar of NORMALISED scores (0–100, higher is better on every
+ * axis). Lower-is-better metrics like latency are inverted during normalisation
+ * so "further out" always means "better".
+ */
+function RadarChart({ results }) {
+  const theme = useChartTheme();
+  const comparison = useMemo(() => buildProtocolComparison(results), [results]);
 
-    if (result.metrics) {
-      Object.keys(result.metrics).forEach((key) => {
-        if (
-          protocolMetrics[result.protocol][key] &&
-          typeof result.metrics[key] === "number"
-        ) {
-          protocolMetrics[result.protocol][key].push(result.metrics[key]);
-        }
-      });
-    }
-  });
+  const active = comparison.protocols.filter((p) => !p.failed);
+  if (active.length === 0) {
+    return <div className="chart-empty">No attribute data yet.</div>;
+  }
 
-  const protocols = Object.keys(protocolMetrics);
-  const labels = attributes?.map((a) => a.label) || [
-    "Latency",
-    "Throughput",
-    "Reliability",
-    "Jitter",
-    "Ordering",
-    "Data Integrity",
-    "Resource Usage",
-    "Security"
-  ];
-
-  // Normalize values to 0-100 scale for radar chart
-  const normalizeValue = (value, attributeName) => {
-    // Find min/max across all protocols
-    const allValues = protocols
-      .flatMap((p) => protocolMetrics[p][attributeName] || [])
-      .filter((v) => typeof v === "number" && !isNaN(v));
-
-    if (allValues.length === 0) return 0;
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
-
-    if (max === min) return 50;
-
-    // For attributes where lower is better
-    if (
-      ["latency", "jitter", "resourceUsage", "securityOverhead"].includes(
-        attributeName
-      )
-    ) {
-      return 100 - ((value - min) / (max - min)) * 100;
-    }
-
-    // For attributes where higher is better
-    return ((value - min) / (max - min)) * 100;
-  };
-
-  const colors = ["#667eea80", "#764ba280", "#f093fb80", "#4facfe80"];
-  const borderColors = ["#667eea", "#764ba2", "#f093fb", "#4facfe"];
-
-  const datasets = protocols.map((protocol, index) => {
-    const attributeNames = attributes?.map((a) => a.name) || [
-      "latency",
-      "throughput",
-      "reliability",
-      "jitter",
-      "ordering",
-      "dataIntegrity",
-      "resourceUsage",
-      "securityOverhead"
-    ];
-
-    const data = attributeNames.map((attrName) => {
-      const values = protocolMetrics[protocol][attrName] || [];
-      if (values.length === 0) return 0;
-      const avg = values.reduce((a, b) => a + b, 0) / values.length;
-      return normalizeValue(avg, attrName);
-    });
-
-    return {
-      label: protocol,
-      data,
-      backgroundColor: colors[index % colors.length],
-      borderColor: borderColors[index % borderColors.length],
-      borderWidth: 2,
-      pointBackgroundColor: borderColors[index % borderColors.length],
-      pointBorderColor: "#fff",
-      pointHoverBackgroundColor: "#fff",
-      pointHoverBorderColor: borderColors[index % borderColors.length]
-    };
-  });
+  const labels = METRIC_KEYS.map((k) => METRICS[k].label);
 
   const data = {
     labels,
-    datasets
+    datasets: active.map((p) => ({
+      label: p.name,
+      data: METRIC_KEYS.map((k) => p.normalized[k] ?? 0),
+      backgroundColor: hexToRgba(p.color, theme.isDark ? 0.28 : 0.18),
+      borderColor: p.color,
+      borderWidth: 2,
+      pointBackgroundColor: p.color,
+      pointBorderColor: theme.surface,
+      pointRadius: 3,
+      _raw: METRIC_KEYS.map((k) => p.metrics[k])
+    }))
   };
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: "top"
-      },
-      title: {
-        display: true,
-        text: "Multi-Attribute Protocol Comparison"
-      }
-    },
-    scales: {
-      r: {
-        beginAtZero: true,
-        max: 100,
-        ticks: {
-          stepSize: 20
+      legend: legendConfig(theme),
+      tooltip: tooltipConfig(theme, {
+        callbacks: {
+          label: (ctx) => {
+            const key = METRIC_KEYS[ctx.dataIndex];
+            const raw = ctx.dataset._raw?.[ctx.dataIndex];
+            return `${ctx.dataset.label}: ${ctx.formattedValue}/100  (${formatMetricValue(
+              key,
+              raw
+            )})`;
+          }
         }
-      }
-    }
+      })
+    },
+    scales: radialScale(theme)
   };
 
-  return <Radar data={data} options={options} />;
+  return (
+    <div
+      className="chart-canvas radar"
+      role="img"
+      aria-label={`Radar chart of normalised attribute scores (0–100, further out is better) for ${active
+        .map((p) => p.name)
+        .join(", ")}. Exact values are in the metrics table.`}
+    >
+      <Radar data={data} options={options} />
+    </div>
+  );
 }
 
 export default RadarChart;

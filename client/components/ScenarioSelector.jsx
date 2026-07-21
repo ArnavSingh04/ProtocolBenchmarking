@@ -1,10 +1,10 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
 import React from "react";
 
 function ScenarioSelector({
   availableScenarios,
   selectedScenarios,
-  onScenariosChange
+  onScenariosChange,
+  error
 }) {
   const toggleScenario = (scenario) => {
     const isSelected = selectedScenarios.some((s) => s.name === scenario.name);
@@ -19,38 +19,45 @@ function ScenarioSelector({
 
   return (
     <div className="scenario-selector">
-      <div className="scenario-list">
+      <div className="scenario-grid" role="group" aria-label="Test scenarios">
         {availableScenarios.map((scenario) => {
-          const isSelected = selectedScenarios.some(
+          const checked = selectedScenarios.some(
             (s) => s.name === scenario.name
           );
           return (
-            <div
+            <label
               key={scenario.name}
-              className={`scenario-card ${isSelected ? "selected" : ""}`}
-              onClick={() => toggleScenario(scenario)}
+              className={`select-card scenario-card ${checked ? "selected" : ""}`}
             >
-              <div className="scenario-checkbox">{isSelected && "✓"}</div>
-              <div className="scenario-content">
-                <h3 className="scenario-name">{scenario.name}</h3>
-                <p className="scenario-description">{scenario.description}</p>
-                <div className="scenario-params">
-                  {scenario.latency && (
-                    <span>Latency: {scenario.latency}ms</span>
-                  )}
-                  {scenario.packetLoss !== undefined && (
-                    <span>Loss: {scenario.packetLoss}%</span>
-                  )}
-                  {scenario.jitter && <span>Jitter: {scenario.jitter}ms</span>}
-                </div>
-              </div>
-            </div>
+              <input
+                type="checkbox"
+                className="visually-hidden"
+                checked={checked}
+                onChange={() => toggleScenario(scenario)}
+              />
+              <span className="select-check" aria-hidden="true">
+                {checked && "✓"}
+              </span>
+              <span className="select-card-title">{scenario.name}</span>
+              <span className="select-card-desc">{scenario.description}</span>
+              <span className="scenario-params">
+                {typeof scenario.latency === "number" && (
+                  <span className="tag">Latency {scenario.latency}ms</span>
+                )}
+                {typeof scenario.packetLoss === "number" && (
+                  <span className="tag">Loss {scenario.packetLoss}%</span>
+                )}
+                {typeof scenario.jitter === "number" && (
+                  <span className="tag">Jitter {scenario.jitter}ms</span>
+                )}
+                {scenario.encrypted && <span className="tag">Encrypted</span>}
+                {scenario.unstable && <span className="tag">Unstable</span>}
+              </span>
+            </label>
           );
         })}
       </div>
-      {selectedScenarios.length === 0 && (
-        <p className="selection-hint">Select at least one scenario to test</p>
-      )}
+      {error && <p className="field-error">{error}</p>}
     </div>
   );
 }

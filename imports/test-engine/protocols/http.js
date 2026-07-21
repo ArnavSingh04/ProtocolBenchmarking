@@ -8,45 +8,16 @@ export class HTTPTester {
     testRunId,
     httpEndpoint: providedEndpoint
   }) {
-    // Import axios - handle different module formats
+    // Import axios - handle both default and named export shapes.
     let axios;
     try {
       const axiosModule = require("axios");
-
-      // Debug: log what we got
-      console.log(
-        "[HTTP] Axios module type:",
-        typeof axiosModule,
-        "has post:",
-        typeof axiosModule?.post
-      );
-
-      // Handle both default export and named export patterns
-      if (axiosModule.default) {
-        axios = axiosModule.default;
-        console.log("[HTTP] Using axios.default");
-      } else {
-        axios = axiosModule;
-        console.log("[HTTP] Using axios directly");
-      }
-
-      // Verify it has the post method
+      axios = axiosModule.default || axiosModule;
       if (!axios || typeof axios.post !== "function") {
-        console.error("[HTTP] Axios structure:", Object.keys(axios || {}));
-        throw new Error(
-          `Axios.post is not a function. Type: ${typeof axios}, Keys: ${Object.keys(
-            axios || {}
-          ).join(", ")}`
-        );
+        throw new Error("axios.post is unavailable");
       }
-
-      console.log("[HTTP] Axios loaded successfully, post method available");
     } catch (error) {
-      console.error("[HTTP] Failed to load axios:", error);
-      console.error("[HTTP] Error details:", error.stack);
-      throw new Error(
-        `Failed to load axios HTTP client: ${error.message}. Please ensure axios is installed with 'meteor npm install axios'`
-      );
+      throw new Error(`Failed to load axios HTTP client: ${error.message}`);
     }
 
     const metrics = {
