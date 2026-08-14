@@ -34,14 +34,19 @@ export class HTTPTester {
     const latencies = [];
     let successCount = 0;
     let totalCount = 0;
+    // Holds the most recent request failure so we can surface a real reason
+    // (rather than a generic "No data returned") when nothing succeeds.
+    let lastError = null;
     const startTime = Date.now();
 
-    // Test endpoint - allow configuration via parameter, environment variable, or use default
+    // Test endpoint - allow configuration via parameter, environment variable, or use default.
+    // Default is postman-echo (stable, accepts any POST) rather than httpbin.org,
+    // which is frequently rate-limited/down and often blocked by prod egress rules.
     const testUrl =
       providedEndpoint ||
       process.env.HTTP_TEST_URL ||
       process.env.HTTP_ENDPOINT ||
-      "https://httpbin.org/post";
+      "https://postman-echo.com/post";
 
     return new Promise((resolve) => {
       let testEnded = false;
@@ -89,6 +94,23 @@ export class HTTPTester {
           metrics.resourceUsage = 25; // Moderate resource usage
           metrics.securityOverhead = 10; // TLS overhead if HTTPS
 
+          // If not a single request succeeded, attach the last failure so the
+          // UI shows the real cause (e.g. ETIMEDOUT, ENOTFOUND, HTTP 503)
+          // instead of the generic "No data returned" fallback.
+          if (successCount === 0) {
+            if (lastError) {
+              const code = lastError.code ? ` (${lastError.code})` : "";
+              const status = lastError.response
+                ? ` [HTTP ${lastError.response.status}]`
+                : "";
+              metrics.error = `All ${totalCount} HTTP request(s) to ${testUrl} failed: ${lastError.message}${code}${status}`;
+            } else if (totalCount > 0) {
+              metrics.error = `All ${totalCount} HTTP request(s) to ${testUrl} returned a non-success status`;
+            } else {
+              metrics.error = `No HTTP requests were sent to ${testUrl} (test window elapsed before any request)`;
+            }
+          }
+
           if (testRunId) {
             const { Meteor } = require("meteor/meteor");
             Meteor.call("testLogs.add", testRunId, {
@@ -116,18 +138,23 @@ export class HTTPTester {
           try {
             const payload = "a".repeat(messageSize);
 
-            // Send POST request to webhook.site
-            // webhook.site accepts any POST with any content - it's designed for webhook testing
-            // Try without explicit Content-Type first (webhook.site is flexible)
+            // Bound the per-request timeout to whatever remains of the scenario
+            // window (capped at 15s). Without this a single slow request could
+            // exceed `duration`, leaving the run with zero successes and no
+            // useful signal about why.
+            const remaining = duration - (Date.now() - startTime);
+            const requestTimeout = Math.min(15000, Math.max(1000, remaining));
+
+            // POST the payload as a raw string. No explicit Content-Type so the
+            // endpoint can accept any format; validateStatus lets us inspect
+            // non-2xx responses instead of throwing on them.
             const response = await axios.post(
               testUrl,
               payload, // Raw string payload
               {
-                timeout: 15000,
+                timeout: requestTimeout,
                 validateStatus: () => true, // Accept any status code for logging
                 maxRedirects: 5
-                // Don't set Content-Type - let axios/webhook.site handle it
-                // webhook.site accepts any format
               }
             );
 
@@ -171,6 +198,12 @@ export class HTTPTester {
                 });
               }
             } else {
+              // Remember the last non-success status so it can be surfaced if
+              // the whole run ends up with zero successful requests.
+              lastError = {
+                message: `Non-success status ${response.status}`,
+                response: { status: response.status }
+              };
               // Log non-2xx status codes - always log first few for debugging
               if (testRunId && (totalCount <= 3 || totalCount % 10 === 0)) {
                 const { Meteor } = require("meteor/meteor");
@@ -184,6 +217,9 @@ export class HTTPTester {
               }
             }
           } catch (error) {
+            // Remember the failure so it can be surfaced if the whole run ends
+            // up with zero successful requests.
+            lastError = error;
             // Request failed - always log first few errors for debugging
             const shouldLog = totalCount <= 3 || totalCount % 10 === 0;
             if (testRunId && shouldLog) {

@@ -20,7 +20,7 @@ const ENDPOINT_FIELDS = [
     key: "httpEndpoint",
     protocol: "HTTP",
     label: "HTTP Endpoint",
-    placeholder: "https://httpbin.org/post",
+    placeholder: "https://postman-echo.com/post",
     hint: "Any endpoint that accepts a POST body"
   },
   {
@@ -68,7 +68,7 @@ function ConfigurationPage() {
   );
   const [endpoints, setEndpoints] = useState(() => ({
     mqttBrokerUrl: loadStored("mqttBrokerUrl", "mqtt://broker.emqx.io:1883"),
-    httpEndpoint: loadStored("httpEndpoint", "https://httpbin.org/post"),
+    httpEndpoint: loadStored("httpEndpoint", "https://postman-echo.com/post"),
     websocketUrl: loadStored("websocketUrl", "wss://echo.websocket.org"),
     coapServerUrl: loadStored("coapServerUrl", "coap://coap.me")
   }));

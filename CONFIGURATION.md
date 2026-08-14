@@ -20,7 +20,7 @@ environment variables. Priority: **UI value → environment variable → default
 | Protocol | UI field | Env var | Default |
 |----------|----------|---------|---------|
 | MQTT | MQTT Broker URL | `MQTT_BROKER_URL` | `mqtt://broker.emqx.io:1883` |
-| HTTP | HTTP Endpoint | `HTTP_TEST_URL` | `https://httpbin.org/post` |
+| HTTP | HTTP Endpoint | `HTTP_TEST_URL` | `https://postman-echo.com/post` |
 | WebSocket | WebSocket URL | `WEBSOCKET_URL` | public echo servers |
 | CoAP | CoAP Server URL | `COAP_SERVER_URL` | `coap://coap.me` |
 

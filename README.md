@@ -132,7 +132,7 @@ All optional — see `.env.example`. Nothing is required to run the app.
 |----------|---------|---------|
 | `SIM_STEP_MS` | Delay between simulated steps (0 = instant) | `220` |
 | `MQTT_BROKER_URL` | Default MQTT endpoint (Live mode) | UI value / `mqtt://broker.emqx.io:1883` |
-| `HTTP_TEST_URL` | Default HTTP endpoint (Live mode) | UI value / `https://httpbin.org/post` |
+| `HTTP_TEST_URL` | Default HTTP endpoint (Live mode) | UI value / `https://postman-echo.com/post` |
 | `WEBSOCKET_URL` | Default WebSocket endpoint (Live mode) | UI value / public echo servers |
 | `COAP_SERVER_URL` | CoAP endpoint (currently informational) | UI value / `coap://coap.me` |
 
