@@ -64,7 +64,7 @@ function ConfigurationPage() {
   const [selectedScenarios, setSelectedScenarios] = useState([SCENARIOS[0]]);
   const [testName, setTestName] = useState("");
   const [mode, setMode] = useState(() =>
-    loadStored("benchmarkMode", "simulation") === "live" ? "live" : "simulation"
+    loadStored("benchmarkMode", "live") === "simulation" ? "simulation" : "live"
   );
   const [endpoints, setEndpoints] = useState(() => ({
     mqttBrokerUrl: loadStored("mqttBrokerUrl", "mqtt://broker.emqx.io:1883"),
