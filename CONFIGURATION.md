@@ -30,9 +30,16 @@ environment variables. Priority: **UI value → environment variable → default
 
 ## Persistence
 
-- No `MONGO_URL` → runs are stored in an in-memory + local JSON fallback
-  (`.local-data/`). Zero setup, single instance.
-- `MONGO_URL` set → runs are stored in MongoDB (`MONGO_DB_NAME` or inferred).
+Runs are stored **per-browser** in `localStorage` — there is no server database.
+The benchmark executes inside a single streaming API request (`/api/tests/run`)
+and the browser accumulates the streamed results, so the app is fully stateless
+server-side and runs on serverless hosts (e.g. Vercel) with zero setup.
+
+Implications:
+
+- History is local to each browser and not shared across devices or users.
+- Clearing site data / `localStorage` clears run history.
+- A benchmark must finish within one request (the route allows up to 5 min).
 
 See `.env.example` for all variables. Never commit real credentials.
 

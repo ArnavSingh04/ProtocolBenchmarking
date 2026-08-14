@@ -1,4 +1,3 @@
-// Chatgpt by openAI was used to assist in the writing the code for the following file
 import React, {
   createContext,
   useCallback,
@@ -7,7 +6,7 @@ import React, {
   useMemo,
   useState
 } from "react";
-import { fetchHistory, fetchRun } from "../lib/api";
+import * as runStore from "../lib/runStore";
 
 const TestRunContext = createContext();
 
@@ -19,47 +18,64 @@ export const useTestRunContext = () => {
   return context;
 };
 
-export const TestRunProvider = ({ children }) => {
-  const [currentTestRunId, setCurrentTestRunId] = useState(() => {
+function readStoredId() {
+  try {
     return localStorage.getItem("currentTestRunId") || null;
-  });
+  } catch {
+    return null;
+  }
+}
+
+export const TestRunProvider = ({ children }) => {
+  const [currentTestRunId, setCurrentTestRunId] = useState(readStoredId);
   const [latestTestRunId, setLatestTestRunId] = useState(null);
   const [sessionReady, setSessionReady] = useState(false);
 
   const refreshSession = useCallback(async () => {
-    try {
-      const runs = await fetchHistory();
-      const latest = runs[0]?._id || null;
-      setLatestTestRunId(latest);
+    const runs = runStore.listRuns();
+    const latest = runs[0]?._id || null;
+    setLatestTestRunId(latest);
 
-      const stored = localStorage.getItem("currentTestRunId");
-      if (stored) {
-        const run = await fetchRun(stored);
-        if (run) {
-          setCurrentTestRunId(stored);
-        } else {
-          localStorage.removeItem("currentTestRunId");
-          setCurrentTestRunId(latest);
-        }
-      } else if (latest) {
-        setCurrentTestRunId(latest);
+    const stored = readStoredId();
+    if (stored && runStore.getRun(stored)) {
+      setCurrentTestRunId(stored);
+    } else if (stored) {
+      // Stored run no longer exists in this browser — fall back to latest.
+      try {
+        localStorage.removeItem("currentTestRunId");
+      } catch {
+        /* ignore storage errors */
       }
-    } catch {
-      // Keep existing session state if history fetch fails temporarily.
-    } finally {
-      setSessionReady(true);
+      setCurrentTestRunId(latest);
+    } else if (latest) {
+      setCurrentTestRunId(latest);
     }
+
+    setSessionReady(true);
   }, []);
 
   useEffect(() => {
     refreshSession();
   }, [refreshSession]);
 
+  // Keep "latest" fresh as runs are created/updated in the store.
   useEffect(() => {
-    if (currentTestRunId) {
-      localStorage.setItem("currentTestRunId", currentTestRunId);
-    } else {
-      localStorage.removeItem("currentTestRunId");
+    const update = () => {
+      const runs = runStore.listRuns();
+      setLatestTestRunId(runs[0]?._id || null);
+    };
+    return runStore.subscribe(update);
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (currentTestRunId) {
+        localStorage.setItem("currentTestRunId", currentTestRunId);
+      } else {
+        localStorage.removeItem("currentTestRunId");
+      }
+    } catch {
+      /* ignore storage errors */
     }
   }, [currentTestRunId]);
 

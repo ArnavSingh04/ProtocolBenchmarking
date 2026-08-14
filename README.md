@@ -78,25 +78,26 @@ attributes.
 ```
 Browser (client-rendered SPA)                Next.js server
 ┌───────────────────────────┐               ┌────────────────────────────┐
-│ React + react-router-dom  │  fetch / SSE  │ pages/api/tests/*           │
-│ pages: Configuration,     │ ────────────► │  startRun · stream ·        │
-│ Live Progress, Results,   │ ◄──────────── │  results · logs · history   │
-│ History                   │   JSON/events │                             │
-│ Chart.js visualisations   │               │ lib/server/runService.js    │
-└───────────────────────────┘               │  → test-engine (sim/live)   │
-                                             │  → mongo.js (Mongo OR local │
-                                             │    JSON fallback)           │
-                                             └────────────────────────────┘
+│ React + react-router-dom  │  POST + NDJSON│ pages/api/tests/run.js      │
+│ pages: Configuration,     │ ────────────► │  (single streaming route)   │
+│ Live Progress, Results,   │ ◄──────────── │ lib/server/benchmarkRunner  │
+│ History                   │  event stream │  → test-engine (sim/live)   │
+│ lib/runStore (localStorage)│               │  (stateless — no DB)        │
+│ Chart.js visualisations   │               └────────────────────────────┘
+└───────────────────────────┘
 shared, framework-agnostic logic: imports/shared/{metrics,validation,report}.js
 ```
 
 - **Rendering:** a catch-all page (`pages/[[...slug]].jsx`) mounts a
   client-only React app; routing is handled by `react-router-dom`.
-- **Live updates:** `pages/api/tests/stream.js` pushes run/result/log events via
-  SSE; the client also polls as a safety net.
-- **Persistence:** `lib/server/mongo.js` uses MongoDB when `MONGO_URL` is set,
-  otherwise an in-memory store backed by a local JSON file
-  (`.local-data/`) — so the app runs with **zero external dependencies**.
+- **Execution & live updates:** `client/lib/runner.js` POSTs the configuration to
+  the single `pages/api/tests/run.js` route, which runs the whole benchmark
+  inline and **streams NDJSON progress events** back on the same request
+  (`lib/server/benchmarkRunner.js`). No background work outlives the response, so
+  it runs on serverless hosts (e.g. Vercel).
+- **Persistence:** the server is **stateless** — no database. The client
+  accumulates streamed events into `client/lib/runStore.js`, which stores runs in
+  `localStorage`. History is therefore **per-browser**.
 - **Shared core:** metric metadata, validation and report generation are pure
   ES modules imported by client, server and tests alike.
 
@@ -106,7 +107,7 @@ shared, framework-agnostic logic: imports/shared/{metrics,validation,report}.js
 - **Routing (client):** react-router-dom 6
 - **Charts:** Chart.js 4 + react-chartjs-2
 - **Protocol libraries (live mode):** `mqtt`, `axios`, `ws`
-- **Persistence:** MongoDB (optional) or a local JSON fallback
+- **Persistence:** per-browser `localStorage` (no server database)
 - **Testing:** Vitest (unit + integration), Playwright (E2E)
 
 ## Local setup
@@ -118,9 +119,10 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-No database or broker is required — the default Simulation mode is fully
-offline. Optionally copy `.env.example` to `.env.local` to point at a real
-MongoDB or (for Live mode) real endpoints.
+No database or broker is required — runs are stored per-browser in
+`localStorage`, and the default Simulation mode is fully offline. Optionally
+copy `.env.example` to `.env.local` to tune the simulation step or (for Live
+mode) point at real endpoints.
 
 ## Environment variables
 
@@ -128,8 +130,6 @@ All optional — see `.env.example`. Nothing is required to run the app.
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `MONGO_URL` | Use MongoDB instead of the local JSON store | local JSON file |
-| `MONGO_DB_NAME` | Database name | inferred from `MONGO_URL` |
 | `SIM_STEP_MS` | Delay between simulated steps (0 = instant) | `220` |
 | `MQTT_BROKER_URL` | Default MQTT endpoint (Live mode) | UI value / `mqtt://broker.emqx.io:1883` |
 | `HTTP_TEST_URL` | Default HTTP endpoint (Live mode) | UI value / `https://httpbin.org/post` |

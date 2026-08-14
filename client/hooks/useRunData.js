@@ -1,172 +1,56 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchHistory, fetchLogs, fetchResults, fetchRun } from "../lib/api";
+import * as runStore from "../lib/runStore";
 
+/** History list, backed by the local run store and kept live via subscription. */
 export function useHistoryData() {
-  const [testRuns, setTestRuns] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [testRuns, setTestRuns] = useState(() => runStore.listRuns());
 
   useEffect(() => {
-    let isCancelled = false;
-
-    const load = async () => {
-      try {
-        const runs = await fetchHistory();
-        if (!isCancelled) {
-          setTestRuns(runs);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setError(err);
-          setIsLoading(false);
-        }
-      }
-    };
-
-    load();
-    const intervalId = setInterval(load, 4000);
-
-    return () => {
-      isCancelled = true;
-      clearInterval(intervalId);
-    };
+    const update = () => setTestRuns(runStore.listRuns());
+    update();
+    return runStore.subscribe(update);
   }, []);
 
-  return { testRuns, isLoading, error };
+  return { testRuns, isLoading: false, error: null };
 }
 
+/**
+ * Read a single run (and its measurements/logs) from the local store,
+ * re-rendering whenever the store changes — e.g. as a run streams in.
+ */
 export function useRunData(testRunId, includeLogs = false) {
-  const [testRun, setTestRun] = useState(null);
-  const [results, setResults] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [isLoading, setIsLoading] = useState(Boolean(testRunId));
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const [error, setError] = useState(null);
+  // Bumped on every store change so the memo below recomputes from fresh data.
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (!testRunId) {
-      setTestRun(null);
-      setResults([]);
-      setLogs([]);
-      setIsLoading(false);
-      setHasLoaded(true);
-      setError(null);
-      return;
-    }
+    if (!testRunId) return undefined;
+    const update = () => setTick((t) => t + 1);
+    update();
+    return runStore.subscribe(update);
+  }, [testRunId]);
 
-    let eventSource;
-    let pollIntervalId;
-    let isCancelled = false;
-
-    let hasInitialLoad = false;
-
-    const loadSnapshot = async () => {
-      if (!hasInitialLoad) {
-        setIsLoading(true);
-      }
-      setError(null);
-      try {
-        const [run, runResults, runLogs] = await Promise.all([
-          fetchRun(testRunId),
-          fetchResults(testRunId),
-          includeLogs ? fetchLogs(testRunId) : Promise.resolve([])
-        ]);
-
-        if (!isCancelled) {
-          setTestRun(run);
-          setResults(runResults);
-          setLogs(runLogs);
-          setIsLoading(false);
-          setHasLoaded(true);
-          hasInitialLoad = true;
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          setIsLoading(false);
-          setHasLoaded(true);
-          setError(err);
-        }
-      }
+  return useMemo(() => {
+    const empty = {
+      testRun: null,
+      results: [],
+      logs: [],
+      isLoading: false,
+      hasLoaded: true,
+      error: null
     };
+    if (!testRunId) return empty;
 
-    loadSnapshot();
+    const run = runStore.getRun(testRunId);
+    if (!run) return empty;
 
-    const setupEventSource = () => {
-      if (isCancelled) return;
-      eventSource = new EventSource(
-        `/api/tests/stream?testRunId=${encodeURIComponent(testRunId)}`
-      );
-
-      eventSource.onmessage = (messageEvent) => {
-        if (isCancelled) {
-          return;
-        }
-
-        try {
-          const event = JSON.parse(messageEvent.data);
-          switch (event.type) {
-            case "snapshot":
-              setTestRun(event.payload.testRun || null);
-              setResults(event.payload.results || []);
-              if (includeLogs) {
-                setLogs(event.payload.logs || []);
-              }
-              setIsLoading(false);
-              setHasLoaded(true);
-              setError(null);
-              break;
-            case "run_updated":
-              setTestRun(event.payload);
-              break;
-            case "result_added":
-              setResults((previous) => [...previous, event.payload]);
-              break;
-            case "log_added":
-              if (includeLogs) {
-                setLogs((previous) => [...previous, event.payload]);
-              }
-              break;
-            default:
-              break;
-          }
-        } catch {
-          // Ignore malformed stream payloads and keep the connection alive.
-        }
-      };
-
-      eventSource.onerror = () => {
-        if (isCancelled) {
-          return;
-        }
-        eventSource?.close();
-      };
-    };
-
-    setupEventSource();
-    // Poll as a safety net when SSE is unavailable after dev-server restarts.
-    pollIntervalId = setInterval(loadSnapshot, 4000);
-
-    return () => {
-      isCancelled = true;
-      if (eventSource) {
-        eventSource.close();
-      }
-      if (pollIntervalId) {
-        clearInterval(pollIntervalId);
-      }
-    };
-  }, [testRunId, includeLogs]);
-
-  return useMemo(
-    () => ({
+    const { measurements, logs, ...testRun } = run;
+    return {
       testRun,
-      results,
-      logs,
-      isLoading,
-      hasLoaded,
-      error
-    }),
-    [testRun, results, logs, isLoading, hasLoaded, error]
-  );
+      results: measurements || [],
+      logs: includeLogs ? logs || [] : [],
+      isLoading: false,
+      hasLoaded: true,
+      error: null
+    };
+  }, [testRunId, includeLogs, tick]);
 }

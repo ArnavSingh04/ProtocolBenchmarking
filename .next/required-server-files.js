@@ -103,7 +103,7 @@ self.__SERVER_FILES_MANIFEST={
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "C:\\Users\\ProductiTeam\\Desktop\\ProtocolBenchmarking",
+    "outputFileTracingRoot": "C:\\Users\\ProductiTeam",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -303,12 +303,12 @@ self.__SERVER_FILES_MANIFEST={
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
-      "root": "C:\\Users\\ProductiTeam\\Desktop\\ProtocolBenchmarking"
+      "root": "C:\\Users\\ProductiTeam"
     },
     "distDirRoot": ".next"
   },
   "appDir": "C:\\Users\\ProductiTeam\\Desktop\\ProtocolBenchmarking",
-  "relativeAppDir": "",
+  "relativeAppDir": "Desktop\\ProtocolBenchmarking",
   "files": [
     ".next\\routes-manifest.json",
     ".next\\server\\pages-manifest.json",

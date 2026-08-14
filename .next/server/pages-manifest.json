@@ -3,11 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/[[...slug]]": "pages/[[...slug]].html",
-  "/api/tests/history": "pages/api/tests/history.js",
-  "/api/tests/logs": "pages/api/tests/logs.js",
-  "/api/tests/results": "pages/api/tests/results.js",
-  "/api/tests/testRun": "pages/api/tests/testRun.js",
-  "/api/tests/startRun": "pages/api/tests/startRun.js",
-  "/api/tests/stream": "pages/api/tests/stream.js",
+  "/api/tests/run": "pages/api/tests/run.js",
   "/404": "pages/404.html"
 }

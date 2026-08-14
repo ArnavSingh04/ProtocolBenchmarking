@@ -1,17 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { createMocks } from "node-mocks-http";
-import handler from "../../pages/api/tests/startRun";
-import { getRunById } from "../../lib/server/runService";
+import handler from "../../pages/api/tests/run";
 
 const validConfig = {
-  testName: "API test",
+  testName: "API run test",
   attributes: [
     { name: "latency", weight: 50 },
     { name: "reliability", weight: 50 }
   ],
   selectedProtocols: ["MQTT", "HTTP"],
   scenarios: [{ name: "Stable Network" }],
-  mode: "simulation"
+  mode: "simulation",
+  fast: true
 };
 
 async function invoke(method, body) {
@@ -20,7 +20,16 @@ async function invoke(method, body) {
   return res;
 }
 
-describe("POST /api/tests/startRun", () => {
+function parseNdjson(res) {
+  return res
+    ._getData()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+describe("POST /api/tests/run", () => {
   it("rejects non-POST methods", async () => {
     const res = await invoke("GET", {});
     expect(res._getStatusCode()).toBe(405);
@@ -32,8 +41,7 @@ describe("POST /api/tests/startRun", () => {
     });
     expect(res._getStatusCode()).toBe(400);
     const body = res._getJSONData();
-    expect(body.fieldErrors).toBeTruthy();
-    expect(body.fieldErrors.protocols).toBeTruthy();
+    expect(body.fieldErrors?.protocols).toBeTruthy();
   });
 
   it("rejects a malformed testRunId", async () => {
@@ -44,23 +52,27 @@ describe("POST /api/tests/startRun", () => {
     expect(res._getStatusCode()).toBe(400);
   });
 
-  it("accepts a valid configuration and creates a run", async () => {
+  it("streams NDJSON events and ends with a completed run", async () => {
     const testRunId = "itest-" + "a1b2c3d4e5f6";
     const res = await invoke("POST", { configuration: validConfig, testRunId });
-    expect(res._getStatusCode()).toBe(200);
-    const body = res._getJSONData();
-    expect(body.testRunId).toBe(testRunId);
 
-    const run = await getRunById(testRunId);
-    expect(run).toBeTruthy();
-    expect(run.protocols).toEqual(["MQTT", "HTTP"]);
+    expect(res._getStatusCode()).toBe(200);
+    const events = parseNdjson(res);
+
+    const results = events.filter((e) => e.type === "result");
+    expect(results).toHaveLength(2); // 2 protocols × 1 scenario
+
+    const done = events.filter((e) => e.type === "done").pop();
+    expect(done.payload.status).toBe("completed");
+    expect(Object.keys(done.payload.results)).toEqual(
+      expect.arrayContaining(["MQTT", "HTTP"])
+    );
   });
 
-  it("does not leak internal error details", async () => {
-    // Missing configuration entirely → validation 400, never a stack trace.
+  it("does not leak internal error details on invalid input", async () => {
     const res = await invoke("POST", {});
     expect(res._getStatusCode()).toBe(400);
     const body = res._getJSONData();
-    expect(JSON.stringify(body)).not.toMatch(/at .*\(/); // no stack frames
+    expect(JSON.stringify(body)).not.toMatch(/at .*\(/);
   });
 });

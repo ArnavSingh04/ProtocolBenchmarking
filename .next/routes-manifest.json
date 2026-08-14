@@ -33,40 +33,10 @@
   ],
   "staticRoutes": [
     {
-      "page": "/api/tests/history",
-      "regex": "^/api/tests/history(?:/)?$",
+      "page": "/api/tests/run",
+      "regex": "^/api/tests/run(?:/)?$",
       "routeKeys": {},
-      "namedRegex": "^/api/tests/history(?:/)?$"
-    },
-    {
-      "page": "/api/tests/logs",
-      "regex": "^/api/tests/logs(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/tests/logs(?:/)?$"
-    },
-    {
-      "page": "/api/tests/results",
-      "regex": "^/api/tests/results(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/tests/results(?:/)?$"
-    },
-    {
-      "page": "/api/tests/startRun",
-      "regex": "^/api/tests/startRun(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/tests/startRun(?:/)?$"
-    },
-    {
-      "page": "/api/tests/stream",
-      "regex": "^/api/tests/stream(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/tests/stream(?:/)?$"
-    },
-    {
-      "page": "/api/tests/testRun",
-      "regex": "^/api/tests/testRun(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/tests/testRun(?:/)?$"
+      "namedRegex": "^/api/tests/run(?:/)?$"
     }
   ],
   "dataRoutes": [],
